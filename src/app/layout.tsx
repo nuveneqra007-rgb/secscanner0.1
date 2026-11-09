@@ -7,7 +7,11 @@ export const metadata: Metadata = {
   keywords: ["ciberseguridad", "threat intelligence", "phishing", "malware", "OSINT"],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="es"

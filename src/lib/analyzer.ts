@@ -51,7 +51,6 @@ function analyzeUrl(input: string, findings: Finding[], evidence: TechnicalEvide
   const subdomainCount = Math.max(0, domainParts.length - 2);
 
   // Build technical evidence (simulated)
-  const seed = hashString(hostname);
   const ageDays = Math.floor(rnd() * 900);
   // bias: if input looks phishing, make age small
   const isPhishingLike = /banc0|secure-login|verify|xn--|bit\.ly|@/.test(full);
@@ -438,26 +437,26 @@ function analyzeIp(input: string, findings: Finding[], evidence: TechnicalEviden
     ],
   };
   evidence.reverseDns = isTor ? "tor-exit-47.zwiebelfreunde.net" : isPrivate ? `${ip}.internal.local` : `ec2-${ip.replace(/\./g,"-")}.compute.amazonaws.com`;
-  evidence.dns = { ptr: evidence.reverseDns } as any;
+  evidence.dns = { ptr: evidence.reverseDns };
 
   // Ports
-  const commonPorts = [
-    { port:22, service:"SSH", risk:"medium" as Severity },
-    { port:80, service:"HTTP", risk:"low" as Severity },
-    { port:443, service:"HTTPS", risk:"low" as Severity },
-    { port:21, service:"FTP", risk:"high" as Severity },
-    { port:23, service:"Telnet", risk:"critical" as Severity },
-    { port:3389, service:"RDP", risk:"critical" as Severity },
-    { port:445, service:"SMB", risk:"critical" as Severity },
-    { port:3306, service:"MySQL", risk:"high" as Severity },
-    { port:6379, service:"Redis", risk:"high" as Severity },
-    { port:27017, service:"MongoDB", risk:"high" as Severity },
+  const commonPorts: { port: number; service: string; risk: Severity }[] = [
+    { port:22, service:"SSH", risk:"medium" },
+    { port:80, service:"HTTP", risk:"low" },
+    { port:443, service:"HTTPS", risk:"low" },
+    { port:21, service:"FTP", risk:"high" },
+    { port:23, service:"Telnet", risk:"critical" },
+    { port:3389, service:"RDP", risk:"critical" },
+    { port:445, service:"SMB", risk:"critical" },
+    { port:3306, service:"MySQL", risk:"high" },
+    { port:6379, service:"Redis", risk:"high" },
+    { port:27017, service:"MongoDB", risk:"high" },
   ];
   // choose open ports based on score
   let openPorts: typeof commonPorts = [];
-  if (isTor || abuseScore>70) openPorts = commonPorts.filter((_,i)=> rnd()>0.4).slice(0,5+Math.floor(rnd()*4));
+  if (isTor || abuseScore>70) openPorts = commonPorts.filter(()=> rnd()>0.4).slice(0,5+Math.floor(rnd()*4));
   else if (abuseScore>40) openPorts = commonPorts.filter(()=> rnd()>0.7).slice(0,3);
-  else openPorts = [{port:443,service:"HTTPS",risk:"low"},{port:80,service:"HTTP",risk:"low"}].slice(0, rnd()>0.5?2:1) as any;
+  else openPorts = ([{port:443,service:"HTTPS",risk:"low" as Severity},{port:80,service:"HTTP",risk:"low" as Severity}]).slice(0, rnd()>0.5?2:1);
   evidence.ports = openPorts.map(p=> ({ ...p, state:"open" as const }));
 
   evidence.iocs = [
@@ -760,7 +759,7 @@ function analyzeHashOrFile(input: string, findings: Finding[], evidence: Technic
   return Math.min(100, score);
 }
 
-export function analyze(input: string, fileName?: string, fileBuffer?: ArrayBuffer): ScanResult {
+export function analyze(input: string, fileName?: string): ScanResult {
   const start = Date.now();
   const type = fileName ? (fileName.toLowerCase().endsWith(".apk") ? "apk" : "file") : detectIndicatorType(input);
   const normalized = input.trim();

@@ -1,5 +1,4 @@
 "use client";
-import { gradeFromScore } from "@/lib/utils";
 
 export function RiskGauge({ score, grade, verdict }: { score: number; grade: string; verdict: string }) {
   const pct = Math.max(2, Math.min(100, score));

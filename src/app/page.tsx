@@ -16,12 +16,11 @@ export default function Home() {
   const [showInput, setShowInput] = useState(true);
 
   useEffect(() => {
-    const h = loadHistory();
-    setHistory(h);
-    // auto-select most recent
-    if (h.length > 0 && !selected) {
-      // don't auto-select, keep landing clean — but we want seed visible in history
-    }
+    const timer = setTimeout(() => {
+      const h = loadHistory();
+      setHistory(h);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const startScan = (input: string, fileName?: string) => {

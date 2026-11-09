@@ -14,13 +14,12 @@ const DEFAULT_STEPS: Omit<ScanStep, "status">[] = [
 
 export function ScanningProgress({ onComplete }: { onComplete: () => void }) {
   const [steps, setSteps] = useState<ScanStep[]>(() =>
-    DEFAULT_STEPS.map(s => ({ ...s, status: "pending" as const }))
+    DEFAULT_STEPS.map((s, i) => ({ ...s, status: i === 0 ? ("running" as const) : ("pending" as const) }))
   );
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let idx = 0;
-    setSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: "running" } : s));
 
     const interval = setInterval(() => {
       setProgress(p => Math.min(98, p + Math.random() * 12 + 4));

@@ -7,6 +7,7 @@ import { HistoryPanel } from "@/components/HistoryPanel";
 import { analyze } from "@/lib/analyzer";
 import { ScanResult } from "@/lib/types";
 import { addScan, clearHistory, loadHistory } from "@/lib/storage";
+import { detectIndicatorType } from "@/lib/utils";
 
 // ── FAB flotante de historial (solo móvil, solo en vista de reporte) ──────────
 function HistoryFab({
@@ -71,6 +72,13 @@ export default function Home() {
   const [showInput, setShowInput] = useState(true);
   const [scanError, setScanError] = useState<string | null>(null);
 
+  // Tipo del indicador actual para pasos adaptativos
+  const indicatorKind = pendingInput
+    ? (pendingInput.fileName?.toLowerCase().endsWith(".apk") ? "apk"
+       : pendingInput.fileName ? "file"
+       : detectIndicatorType(pendingInput.input))
+    : "unknown";
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setHistory(loadHistory());
@@ -88,19 +96,22 @@ export default function Home() {
 
   const completeScan = () => {
     if (!pendingInput) return;
-    try {
-      const result = analyze(pendingInput.input, pendingInput.fileName);
-      const nextHist = addScan(result);
-      setHistory(nextHist);
-      setSelected(result);
-      setScanning(false);
-      setPendingInput(null);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      setScanError(msg);
-      setScanning(false);
-      setPendingInput(null);
-    }
+    // Fix #3: diferir analyze() para no bloquear el render loop
+    setTimeout(() => {
+      try {
+        const result = analyze(pendingInput.input, pendingInput.fileName);
+        const nextHist = addScan(result);
+        setHistory(nextHist);
+        setSelected(result);
+        setScanning(false);
+        setPendingInput(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error desconocido";
+        setScanError(msg);
+        setScanning(false);
+        setPendingInput(null);
+      }
+    }, 0);
   };
 
   const handleSelect = (r: ScanResult) => {
@@ -182,25 +193,27 @@ export default function Home() {
         {showInput && !scanning && !selected && (
           <div className="flex flex-col items-center">
             {/* Pill de estado */}
-            <div className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 mb-6">
+            <div className="animate-fade-up inline-flex items-center gap-2 text-[11px] font-mono tracking-widest px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 mb-6">
               <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
               Demo · Sin registro · 100% local
             </div>
 
             {/* Título */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-center leading-[0.92] mb-4">
+            <h1 className="animate-fade-up delay-100 text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-center leading-[0.92] mb-4">
               <span className="text-white">Detecta amenazas</span>
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">en segundos</span>
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-sm md:text-[15px] text-zinc-400 text-center max-w-[480px] leading-relaxed mb-10">
+            <p className="animate-fade-up delay-150 text-sm md:text-[15px] text-zinc-400 text-center max-w-[480px] leading-relaxed mb-10">
               Pega una <span className="text-zinc-200 font-medium">URL, IP, dominio o hash</span> y obtén un reporte técnico completo: reputación, DNS, TLS, YARA y más.
             </p>
 
             {/* Input principal */}
-            <ScannerInput onAnalyze={startScan} loading={false} />
+            <div className="animate-fade-up delay-200 w-full flex justify-center">
+              <ScannerInput onAnalyze={startScan} loading={false} />
+            </div>
 
             {/* Separador */}
             <div className="w-full max-w-[760px] mt-12 mb-8 flex items-center gap-4">
@@ -268,7 +281,7 @@ export default function Home() {
               </span>
             </div>
 
-            <ScanningProgress onComplete={completeScan} />
+            <ScanningProgress onComplete={completeScan} indicatorKind={indicatorKind} />
 
             {/* Dato educativo */}
             <div className="mt-8 max-w-[560px] rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 text-center">
@@ -282,7 +295,7 @@ export default function Home() {
 
         {/* ── REPORTE ── */}
         {selected && !scanning && (
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
+          <div className="animate-fade-in grid lg:grid-cols-[1fr_320px] gap-6 items-start">
             {/* Reporte principal */}
             <div className="min-w-0">
               <button

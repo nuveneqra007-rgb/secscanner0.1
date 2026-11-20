@@ -227,6 +227,11 @@ export function HistoryPanel({
                       {vs.label}
                     </span>
                     <span className="text-[11px] font-mono text-zinc-600">{item.type.toUpperCase()}</span>
+                    {item.id.startsWith("demo_") && (
+                      <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border bg-violet-500/15 text-violet-400 border-violet-500/20">
+                        DEMO
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-zinc-200 truncate">{item.normalizedInput}</div>
                   <div className="text-[11px] font-mono text-zinc-600 mt-0.5">{formatDate(item.timestamp)}</div>

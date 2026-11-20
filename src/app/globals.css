@@ -32,6 +32,27 @@ code, pre, .font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+/* ── Animaciones de entrada ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-up {
+  animation: fadeUp 0.35s ease-out both;
+}
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+/* Delay helpers */
+.delay-100 { animation-delay: 0.10s; }
+.delay-150 { animation-delay: 0.15s; }
+.delay-200 { animation-delay: 0.20s; }
+.delay-300 { animation-delay: 0.30s; }
+
 /* Oculta scrollbar en tabs horizontales sin perder funcionalidad */
 .overflow-x-auto {
   scrollbar-width: none;

@@ -553,6 +553,40 @@ export function ThreatReport({
   return (
     <div className="w-full space-y-5">
 
+      {/* ── Resumen ejecutivo ── */}
+      <div className={`rounded-2xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4
+        ${result.verdict === "malicious"
+          ? "border-red-500/40 bg-red-500/5"
+          : result.verdict === "suspicious"
+          ? "border-amber-500/40 bg-amber-500/5"
+          : "border-emerald-500/40 bg-emerald-500/5"}`}>
+        {/* Score grande */}
+        <div className={`text-5xl font-black tabular-nums shrink-0 leading-none
+          ${result.riskScore >= 75 ? "text-red-400"
+          : result.riskScore >= 40 ? "text-amber-400"
+          : "text-emerald-400"}`}>
+          {result.riskScore}
+          <span className="text-lg font-normal text-zinc-500 ml-1">/100</span>
+        </div>
+        {/* Separador vertical */}
+        <div className="hidden sm:block w-px h-12 bg-zinc-800 shrink-0" />
+        {/* Texto */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className={`text-xs font-black tracking-widest px-3 py-1 rounded-full border
+              ${result.verdict === "malicious"  ? "bg-red-500 text-white border-red-500"
+              : result.verdict === "suspicious" ? "bg-amber-500 text-black border-amber-500"
+              : "bg-emerald-500 text-white border-emerald-500"}`}>
+              {result.verdict === "malicious" ? "● MALICIOSO" : result.verdict === "suspicious" ? "● SOSPECHOSO" : "● LIMPIO"}
+            </span>
+            <span className="text-xs font-mono text-zinc-500">
+              Grado {result.grade} · {result.type.toUpperCase()} · Confianza {result.confidence}
+            </span>
+          </div>
+          <p className="text-sm text-zinc-300 leading-relaxed line-clamp-2">{result.summary}</p>
+        </div>
+      </div>
+
       {/* ── Barra superior ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-zinc-500">

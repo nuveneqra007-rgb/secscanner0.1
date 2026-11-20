@@ -13,24 +13,22 @@ export default function SharedScan() {
   const [result,   setResult]   = useState<ScanResult | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  // useRef para correr solo una vez sin disparar cascada de renders
   const resolved = useRef(false);
 
   useEffect(() => {
     if (!id || resolved.current) return;
     resolved.current = true;
-
-    // Leer historial de forma diferida para evitar setState síncrono
     const timer = setTimeout(() => {
       const history = loadHistory();
       const found   = history.find((r) => r.id === id) ?? null;
       if (found) {
         setResult(found);
+        // Fix #7: actualizar título dinámicamente
+        document.title = `Reporte: ${found.normalizedInput.slice(0, 40)} — ThreatScan`;
       } else {
         setNotFound(true);
       }
     }, 0);
-
     return () => clearTimeout(timer);
   }, [id]);
 
@@ -74,12 +72,10 @@ export default function SharedScan() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
-      {/* Fondo */}
+    <div className="min-h-screen bg-[#09090b] animate-fade-in">
       <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:32px_32px] opacity-[0.05]" />
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(6,182,212,0.08),transparent)]" />
 
-      {/* Header mínimo */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-zinc-950/80 border-b border-zinc-800/60">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <button onClick={handleNewScan} className="flex items-center gap-3 group">
@@ -104,8 +100,7 @@ export default function SharedScan() {
       </header>
 
       <main className="max-w-[1200px] mx-auto px-4 md:px-6 py-10">
-        {/* Banner de reporte compartido */}
-        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
+        <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-cyan-400 shrink-0">
             <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
             <polyline points="16 6 12 2 8 6"/>

@@ -82,22 +82,14 @@ export function analyze(input: string, fileName?: string): ScanResult {
 // Pre-seeded examples
 export function getSeedScans(): ScanResult[] {
   const examples: { input: string; fileName?: string }[] = [
-    {
-      input: "https://banc0-santander-secure-login.tk/verify/account?session=9283&token=am9obi5kb2VAbWFpbC5jb20=",
-    },
-    {
-      input: "185.220.101.47",
-    },
-    {
-      input: "https://github.com/trending",
-    },
+    { input: "https://banc0-santander-secure-login.tk/verify/account?session=9283&token=am9obi5kb2VAbWFpbC5jb20=" },
+    { input: "185.220.101.47" },
+    { input: "https://github.com/trending" },
   ];
-  // Use deterministic seeds by overriding date
   const results = examples.map(e => analyze(e.input, e.fileName));
-  // Force timestamps to look recent and distinct
   const now = Date.now();
-  results[0].timestamp = new Date(now - 1000*60*42).toISOString(); // 42 min ago
-  results[1].timestamp = new Date(now - 1000*60*120).toISOString(); // 2h ago
+  results[0].timestamp = new Date(now - 1000*60*42).toISOString();
+  results[1].timestamp = new Date(now - 1000*60*120).toISOString();
   results[2].timestamp = new Date(now - 1000*60*240).toISOString(); // 4h ago
   // Ensure verdicts are as expected
   // Force first to be malicious high score if not
@@ -116,6 +108,8 @@ export function getSeedScans(): ScanResult[] {
     results[2].verdict = "clean";
     results[2].grade = "A";
   }
-  // Sort newest first
+  // Marcar como demo para que el HistoryPanel muestre la etiqueta
+  results.forEach(r => { r.id = `demo_${r.id}`; });
+
   return results.sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }

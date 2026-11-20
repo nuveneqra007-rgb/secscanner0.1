@@ -71,17 +71,18 @@ export function ScanningProgress({
   onComplete: () => void;
   indicatorKind?: IndicatorKind;
 }) {
-  const kind   = indicatorKind in STEPS_BY_KIND ? indicatorKind : "unknown";
+  const kind = indicatorKind in STEPS_BY_KIND ? indicatorKind : "unknown";
   const stepDefs = STEPS_BY_KIND[kind];
 
-  const [steps,    setSteps]    = useState<ScanStep[]>(() =>
-    stepDefs.map((s, i) => ({ ...s, status: i === 0 ? "running" as const : "pending" as const }))
+  const [steps, setSteps] = useState<ScanStep[]>(() =>
+    stepDefs.map((s, i) => ({ ...s, status: i === 0 ? ("running" as const) : ("pending" as const) }))
   );
   const [progress, setProgress] = useState(0);
 
-  // Fix #2: usar ref para onComplete para evitar que el cambio de referencia reinicie el efecto
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     let idx = 0;
@@ -103,45 +104,55 @@ export function ScanningProgress({
         }
         return next;
       });
-    }, 380 + Math.random() * 240);
+    }, 360 + Math.random() * 200);
 
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // sin dependencias — el efecto corre una sola vez por montaje
+  }, [stepDefs.length]);
 
   const kindLabel: Record<IndicatorKind, string> = {
-    url: "URL", domain: "Dominio", ip: "IP",
-    hash: "Hash", apk: "APK", file: "Archivo", unknown: "Indicador",
+    url: "URL",
+    domain: "Dominio",
+    ip: "IP",
+    hash: "Hash",
+    apk: "APK",
+    file: "Archivo",
+    unknown: "Indicador",
   };
 
   return (
-    <div className="w-full max-w-[600px] mx-auto">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur p-6">
+    <div className="w-full max-w-[620px] mx-auto animate-glitch-in">
+      <div className="rounded-2xl border border-[#333333] bg-[#121212]/90 backdrop-blur p-6 relative overflow-hidden shadow-2xl">
+        {/* Subtle scanline line */}
+        <div
+          className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
+          style={{ animation: "scanSweep 2.5s ease-in-out infinite" }}
+        />
+
         {/* Cabecera */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center shrink-0">
-              <span className="w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
+            <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] border border-[#333333] flex items-center justify-center shrink-0">
+              <span className="w-2.5 h-2.5 bg-white rounded-full animate-ping" />
             </div>
             <div>
-              <div className="text-sm font-bold tracking-widest text-zinc-100">
+              <div className="text-sm font-bold tracking-widest text-white uppercase">
                 Analizando {kindLabel[kind]}
               </div>
-              <div className="text-[11px] text-zinc-500 font-mono mt-0.5">
-                ThreatScan Engine v2.4 · {stepDefs.length} módulos
+              <div className="text-[11px] text-[#A3A3A3] font-mono mt-0.5">
+                SecScanner Engine v0.1 · {stepDefs.length} módulos
               </div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] text-zinc-600 font-mono">PROGRESO</div>
-            <div className="text-base font-black font-mono text-cyan-400">{Math.round(progress)}%</div>
+            <div className="text-[10px] text-[#666666] font-mono tracking-wider">PROGRESO</div>
+            <div className="text-lg font-black font-mono text-white">{Math.round(progress)}%</div>
           </div>
         </div>
 
         {/* Barra de progreso */}
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-5">
+        <div className="h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden mb-5 border border-[#333333]/40">
           <div
-            className="h-full bg-gradient-to-r from-cyan-500 to-sky-400 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-[#888888] via-white to-[#E0E0E0] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(255,255,255,0.4)]"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -151,43 +162,52 @@ export function ScanningProgress({
           {steps.map((s) => (
             <div
               key={s.id}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300
-                ${s.status === "running"  ? "bg-zinc-800 border-zinc-700"
-                : s.status === "done"    ? "bg-zinc-900/60 border-zinc-800/60 opacity-80"
-                : "bg-transparent border-transparent opacity-40"}`}
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border transition-all duration-300 ${
+                s.status === "running"
+                  ? "bg-[#1A1A1A] border-white/30 shadow-[0_0_15px_rgba(255,255,255,0.04)]"
+                  : s.status === "done"
+                  ? "bg-[#0E0E0E] border-[#222222] opacity-80"
+                  : "bg-transparent border-transparent opacity-30"
+              }`}
             >
               {/* Icono de estado */}
               <div className="shrink-0">
                 {s.status === "done" ? (
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                      <path d="M5 13l4 4L19 7"/>
+                  <div className="w-5 h-5 rounded-full bg-[#E0E0E0] text-black flex items-center justify-center">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+                      <path d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 ) : s.status === "running" ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin" />
+                  <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full border border-zinc-700" />
+                  <div className="w-5 h-5 rounded-full border border-[#333333]" />
                 )}
               </div>
 
               {/* Texto */}
               <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium leading-none mb-0.5
-                  ${s.status === "running" ? "text-white" : s.status === "done" ? "text-zinc-300" : "text-zinc-600"}`}>
+                <div
+                  className={`text-sm font-medium leading-none mb-0.5 ${
+                    s.status === "running" ? "text-white" : s.status === "done" ? "text-[#D4D4D4]" : "text-[#666666]"
+                  }`}
+                >
                   {s.label}
                 </div>
                 {s.status !== "pending" && (
-                  <div className="text-[11px] text-zinc-600 font-mono truncate">{s.detail}</div>
+                  <div className="text-[11px] text-[#A3A3A3] font-mono truncate">{s.detail}</div>
                 )}
               </div>
 
               {/* Badge */}
               {s.status !== "pending" && (
-                <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full border shrink-0
-                  ${s.status === "running"
-                    ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/20"
-                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
+                <span
+                  className={`text-[10px] font-bold tracking-widest px-2.5 py-0.5 rounded-full border shrink-0 ${
+                    s.status === "running"
+                      ? "bg-white/10 text-white border-white/20 animate-pulse"
+                      : "bg-[#E0E0E0]/10 text-[#E0E0E0] border-[#E0E0E0]/20"
+                  }`}
+                >
                   {s.status === "running" ? "EN CURSO" : "OK"}
                 </span>
               )}
@@ -196,8 +216,8 @@ export function ScanningProgress({
         </div>
 
         {/* Footer */}
-        <div className="mt-5 flex items-center gap-2 text-[11px] font-mono text-zinc-600">
-          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse shrink-0" />
+        <div className="mt-5 pt-4 border-t border-[#222222] flex items-center gap-2 text-[11px] font-mono text-[#666666]">
+          <span className="w-1.5 h-1.5 bg-[#E0E0E0] rounded-full animate-pulse shrink-0" />
           Análisis heurístico local · sin enviar datos a servidores externos
         </div>
       </div>

@@ -10,34 +10,34 @@ const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "info"]
 
 const severityStyle: Record<Severity, { badge: string; icon: string; row: string; dot: string }> = {
   critical: {
-    badge: "bg-red-500 text-white border-red-500",
-    icon:  "bg-red-500 border-red-500 text-white",
-    row:   "border-l-red-500",
-    dot:   "bg-red-500",
+    badge: "bg-[#FF3333] text-white border-[#FF3333]",
+    icon:  "bg-[#FF3333] border-[#FF3333] text-white",
+    row:   "border-l-[#FF3333]",
+    dot:   "bg-[#FF3333]",
   },
   high: {
-    badge: "bg-orange-500 text-white border-orange-500",
-    icon:  "bg-orange-500 border-orange-500 text-white",
-    row:   "border-l-orange-500",
-    dot:   "bg-orange-500",
+    badge: "bg-[#FF3333]/80 text-white border-[#FF3333]",
+    icon:  "bg-[#FF3333]/90 border-[#FF3333] text-white",
+    row:   "border-l-[#FF3333]",
+    dot:   "bg-[#FF3333]",
   },
   medium: {
-    badge: "bg-amber-400 text-black border-amber-400",
-    icon:  "bg-amber-400 border-amber-400 text-black",
-    row:   "border-l-amber-400",
-    dot:   "bg-amber-400",
+    badge: "bg-[#A3A3A3] text-black border-[#A3A3A3]",
+    icon:  "bg-[#A3A3A3] border-[#A3A3A3] text-black",
+    row:   "border-l-[#A3A3A3]",
+    dot:   "bg-[#A3A3A3]",
   },
   low: {
-    badge: "bg-sky-500 text-white border-sky-500",
-    icon:  "bg-sky-500 border-sky-500 text-white",
-    row:   "border-l-sky-500",
-    dot:   "bg-sky-500",
+    badge: "bg-[#666666] text-white border-[#666666]",
+    icon:  "bg-[#666666] border-[#666666] text-white",
+    row:   "border-l-[#666666]",
+    dot:   "bg-[#666666]",
   },
   info: {
-    badge: "bg-zinc-700 text-zinc-300 border-zinc-600",
-    icon:  "bg-zinc-800 border-zinc-700 text-zinc-400",
-    row:   "border-l-zinc-600",
-    dot:   "bg-zinc-500",
+    badge: "bg-[#222222] text-[#888888] border-[#333333]",
+    icon:  "bg-[#1A1A1A] border-[#333333] text-[#888888]",
+    row:   "border-l-[#333333]",
+    dot:   "bg-[#444444]",
   },
 };
 
@@ -57,7 +57,7 @@ function SimulatedBadge() {
   return (
     <span
       title="Estos datos son generados heurísticamente con fines de demostración. No representan información real del indicador."
-      className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 cursor-help"
+      className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#A3A3A3] cursor-help"
     >
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
         <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -79,16 +79,16 @@ function SeverityBadge({ s }: { s: Severity }) {
 function KV({ label, value, accent }: { label: string; value?: string | null; accent?: string }) {
   if (!value) return null;
   return (
-    <div className="flex justify-between gap-3 text-xs font-mono py-1.5 border-b border-zinc-800/60 last:border-0">
-      <span className="text-zinc-500 shrink-0">{label}</span>
-      <span className={`text-right break-all ${accent ?? "text-zinc-300"}`}>{value}</span>
+    <div className="flex justify-between gap-3 text-xs font-mono py-1.5 border-b border-[#222222] last:border-0">
+      <span className="text-[#666666] shrink-0">{label}</span>
+      <span className={`text-right break-all ${accent ?? "text-[#D4D4D4]"}`}>{value}</span>
     </div>
   );
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-zinc-950 border border-zinc-800 p-4 space-y-0">
+    <div className="rounded-xl bg-[#0A0A0A] border border-[#333333] p-4 space-y-0">
       {children}
     </div>
   );
@@ -135,22 +135,22 @@ function FindingsAccordion({ result }: { result: ScanResult }) {
         const st = severityStyle[sev];
 
         return (
-          <div key={sev} className="rounded-xl border border-zinc-800 overflow-hidden">
+          <div key={sev} className="rounded-xl border border-[#333333] overflow-hidden">
             {/* Cabecera de sección */}
             <button
               onClick={() => toggle(sev)}
-              className="w-full flex items-center justify-between px-5 py-3.5 bg-zinc-900/80 hover:bg-zinc-900 transition"
+              className="w-full flex items-center justify-between px-5 py-3.5 bg-[#121212] hover:bg-[#1A1A1A] transition"
             >
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full ${st.dot}`} />
-                <span className="text-sm font-bold text-zinc-200">{severityLabel(sev)}</span>
+                <span className="text-sm font-bold text-white uppercase">{severityLabel(sev)}</span>
                 <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${st.badge}`}>
                   {items.length}
                 </span>
               </div>
               <svg
                 width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="#71717a" strokeWidth="2"
+                stroke="#666666" strokeWidth="2"
                 className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
               >
                 <path d="M6 9l6 6 6-6" />
@@ -159,15 +159,15 @@ function FindingsAccordion({ result }: { result: ScanResult }) {
 
             {/* Findings dentro */}
             {isOpen && (
-              <div className="divide-y divide-zinc-800">
+              <div className="divide-y divide-[#222222]">
                 {items.map((f) => {
                   const isExpanded = expandedIds.has(f.id);
                   return (
-                    <div key={f.id} className={`border-l-2 ${st.row}`}>
+                    <div key={f.id} className={`border-l-2 ${st.row} bg-[#0A0A0A]`}>
                       {/* Fila del finding */}
                       <button
                         onClick={() => toggleFinding(f.id)}
-                        className="w-full text-left flex items-start gap-4 px-5 py-4 hover:bg-zinc-900/40 transition"
+                        className="w-full text-left flex items-start gap-4 px-5 py-4 hover:bg-[#121212] transition"
                       >
                         <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center border text-[11px] font-black shrink-0 ${st.icon}`}>
                           {SEVERITY_ICONS[f.severity]}
@@ -177,21 +177,21 @@ function FindingsAccordion({ result }: { result: ScanResult }) {
                             <SeverityBadge s={f.severity} />
                             <span className="text-sm font-semibold text-white">{f.title}</span>
                             {f.mitre && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-[#E0E0E0] border border-white/20">
                                 {f.mitre}
                               </span>
                             )}
                             {f.cwe && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#888888] border border-[#333333]">
                                 {f.cwe}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-zinc-400 leading-relaxed line-clamp-2">{f.description}</p>
+                          <p className="text-sm text-[#A3A3A3] leading-relaxed line-clamp-2">{f.description}</p>
                         </div>
                         <svg
                           width="14" height="14" viewBox="0 0 24 24" fill="none"
-                          stroke="#52525b" strokeWidth="2"
+                          stroke="#666666" strokeWidth="2"
                           className={`mt-1 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                         >
                           <path d="M6 9l6 6 6-6" />
@@ -201,9 +201,9 @@ function FindingsAccordion({ result }: { result: ScanResult }) {
                       {/* Evidencia expandida */}
                       {isExpanded && f.evidence && (
                         <div className="px-5 pb-4">
-                          <div className="rounded-xl bg-zinc-950 border border-zinc-800 p-4">
-                            <div className="text-[10px] tracking-widest font-bold text-zinc-600 mb-2">EVIDENCIA TÉCNICA</div>
-                            <p className="text-xs font-mono text-zinc-300 break-all leading-relaxed">{f.evidence}</p>
+                          <div className="rounded-xl bg-[#121212] border border-[#333333] p-4">
+                            <div className="text-[10px] tracking-widest font-bold text-[#666666] mb-2 uppercase">EVIDENCIA TÉCNICA</div>
+                            <p className="text-xs font-mono text-[#E0E0E0] break-all leading-relaxed">{f.evidence}</p>
                           </div>
                         </div>
                       )}
@@ -244,18 +244,19 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
   if (availableTabs.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+    <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 overflow-hidden shadow-xl">
       {/* Tab bar */}
-      <div className="flex items-center border-b border-zinc-800 overflow-x-auto">
+      <div className="flex items-center border-b border-[#333333] overflow-x-auto bg-[#0E0E0E]">
         <div className="flex">
           {availableTabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setActive(t.id)}
-              className={`px-4 py-3 text-[11px] font-bold tracking-wider whitespace-nowrap transition-colors
-                ${active === t.id
-                  ? "text-white border-b-2 border-cyan-500 -mb-px bg-zinc-900/60"
-                  : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-4 py-3 text-[11px] font-bold tracking-wider whitespace-nowrap transition-colors ${
+                active === t.id
+                  ? "text-white border-b-2 border-white -mb-px bg-[#1A1A1A]"
+                  : "text-[#666666] hover:text-[#A3A3A3]"
+              }`}
             >
               {t.label}
             </button>
@@ -274,7 +275,7 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
           <div className="grid sm:grid-cols-2 gap-4">
             {ev.whois && (
               <div>
-                <div className="text-xs font-semibold text-zinc-400 mb-2">WHOIS</div>
+                <div className="text-xs font-semibold text-[#A3A3A3] mb-2 uppercase tracking-wider">WHOIS</div>
                 <Panel>
                   <KV label="Registrar"  value={ev.whois.registrar} />
                   <KV label="Creado"     value={ev.whois.created ? `${ev.whois.created.slice(0,10)} (${ev.whois.ageDays}d)` : null} />
@@ -285,9 +286,9 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
             )}
             {ev.dns && (
               <div>
-                <div className="text-xs font-semibold text-zinc-400 mb-2">DNS</div>
+                <div className="text-xs font-semibold text-[#A3A3A3] mb-2 uppercase tracking-wider">DNS</div>
                 <Panel>
-                  <KV label="A"   value={ev.dns.a?.join(", ")}   accent="text-cyan-400" />
+                  <KV label="A"   value={ev.dns.a?.join(", ")} accent="text-white font-bold" />
                   <KV label="MX"  value={ev.dns.mx?.join(", ")} />
                   <KV label="TXT" value={ev.dns.txt?.join(" | ")} />
                   <KV label="PTR" value={ev.reverseDns} />
@@ -304,10 +305,10 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
             <KV label="Sujeto"      value={ev.ssl.subject} />
             <KV label="Válido hasta"
                value={ev.ssl.validTo ? `${ev.ssl.validTo.slice(0,10)} (${ev.ssl.daysUntilExpiry}d)` : null}
-               accent={ev.ssl.expired ? "text-red-400" : "text-emerald-400"} />
+               accent={ev.ssl.expired ? "text-[#FF3333] font-bold" : "text-[#E0E0E0]"} />
             <KV label="SANs"        value={ev.ssl.sans?.join(", ")} />
             {ev.ssl.expired && (
-              <div className="mt-3 rounded-lg bg-red-950/30 border border-red-900/50 px-3 py-2 text-xs text-red-300 font-mono">
+              <div className="mt-3 rounded-lg bg-[#FF3333]/10 border border-[#FF3333]/30 px-3 py-2 text-xs text-[#FF3333] font-mono">
                 ⚠ Certificado expirado
               </div>
             )}
@@ -316,14 +317,14 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
 
         {/* Cabeceras HTTP */}
         {active === "headers" && ev.httpHeaders && (
-          <div className="rounded-xl bg-zinc-950 border border-zinc-800 p-4 max-h-64 overflow-auto">
+          <div className="rounded-xl bg-[#0A0A0A] border border-[#333333] p-4 max-h-64 overflow-auto">
             <div className="space-y-1.5 text-[11px] font-mono">
               {Object.entries(ev.httpHeaders)
                 .filter(([, v]) => v)
                 .map(([k, v]) => (
                   <div key={k} className="flex gap-2">
-                    <span className="text-zinc-500 shrink-0">{k}:</span>
-                    <span className="text-zinc-300 break-all">{v}</span>
+                    <span className="text-[#666666] shrink-0">{k}:</span>
+                    <span className="text-[#D4D4D4] break-all">{v}</span>
                   </div>
                 ))}
             </div>
@@ -334,14 +335,15 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
         {active === "redirects" && ev.redirectChain && (
           <div className="space-y-2">
             {ev.redirectChain.map((r, i) => (
-              <div key={i} className="flex gap-3 items-start rounded-xl bg-zinc-950 border border-zinc-800 px-4 py-3">
-                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border h-fit
-                  ${r.status === 200
-                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-                    : "bg-amber-500/15 text-amber-400 border-amber-500/20"}`}>
+              <div key={i} className="flex gap-3 items-start rounded-xl bg-[#0A0A0A] border border-[#333333] px-4 py-3">
+                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border h-fit ${
+                  r.status === 200
+                    ? "bg-[#E0E0E0]/15 text-[#E0E0E0] border-[#E0E0E0]/30"
+                    : "bg-[#A3A3A3]/15 text-[#A3A3A3] border-[#A3A3A3]/30"
+                }`}>
                   {r.status}
                 </span>
-                <span className="text-xs font-mono text-zinc-300 break-all">{r.url}</span>
+                <span className="text-xs font-mono text-[#D4D4D4] break-all">{r.url}</span>
               </div>
             ))}
           </div>
@@ -351,14 +353,14 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
         {active === "geo" && ev.geolocation && (
           <div className="space-y-4">
             <div className="flex gap-4 items-center">
-              <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-2xl shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[#333333] flex items-center justify-center text-xl shrink-0">
                 🌐
               </div>
               <div>
                 <div className="text-sm font-semibold text-white">
                   {ev.geolocation.city}, {ev.geolocation.country}
                 </div>
-                <div className="text-xs font-mono text-zinc-400 mt-0.5">
+                <div className="text-xs font-mono text-[#666666] mt-0.5">
                   {ev.geolocation.lat.toFixed(4)}, {ev.geolocation.lon.toFixed(4)}
                 </div>
               </div>
@@ -377,17 +379,18 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
           <div className="space-y-4">
             {/* Score */}
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center border shrink-0
-                ${ev.reputation.abuseScore > 70
-                  ? "bg-red-500/15 border-red-500/30 text-red-400"
+              <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center border shrink-0 ${
+                ev.reputation.abuseScore > 70
+                  ? "bg-[#FF3333]/10 border-[#FF3333]/30 text-[#FF3333]"
                   : ev.reputation.abuseScore > 30
-                  ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                  : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"}`}>
+                  ? "bg-[#A3A3A3]/10 border-[#A3A3A3]/30 text-[#A3A3A3]"
+                  : "bg-[#E0E0E0]/10 border-[#E0E0E0]/30 text-[#E0E0E0]"
+              }`}>
                 <span className="text-xl font-black">{ev.reputation.abuseScore}</span>
-                <span className="text-[9px] tracking-widest">ABUSE</span>
+                <span className="text-[9px] tracking-widest uppercase">ABUSE</span>
               </div>
-              <div className="text-xs font-mono text-zinc-400 space-y-1">
-                <div><span className="text-zinc-200 font-bold">{ev.reputation.totalReports}</span> reportes (90d)</div>
+              <div className="text-xs font-mono text-[#888888] space-y-1">
+                <div><span className="text-white font-bold">{ev.reputation.totalReports}</span> reportes (90d)</div>
                 {ev.reputation.lastReported && (
                   <div>Último: {ev.reputation.lastReported.slice(0,10)}</div>
                 )}
@@ -396,12 +399,13 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
             {/* Blacklists */}
             <div className="space-y-2">
               {ev.reputation.blacklists.map((b) => (
-                <div key={b.name} className="flex items-center justify-between rounded-xl bg-zinc-950 border border-zinc-800 px-4 py-2.5">
-                  <span className="text-xs font-medium text-zinc-300">{b.name}</span>
-                  <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full border
-                    ${b.listed
-                      ? "bg-red-500 text-white border-red-500"
-                      : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"}`}>
+                <div key={b.name} className="flex items-center justify-between rounded-xl bg-[#0A0A0A] border border-[#333333] px-4 py-2.5">
+                  <span className="text-xs font-medium text-white">{b.name}</span>
+                  <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full border ${
+                    b.listed
+                      ? "bg-[#FF3333] text-white border-[#FF3333]"
+                      : "bg-[#E0E0E0]/15 text-[#E0E0E0] border-[#E0E0E0]/30"
+                  }`}>
                     {b.listed ? "LISTADO" : "LIMPIO"}
                   </span>
                 </div>
@@ -414,17 +418,19 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
         {active === "ports" && ev.ports && (
           <div className="space-y-2">
             {ev.ports.map((p) => (
-              <div key={p.port} className="flex items-center justify-between rounded-xl bg-zinc-950 border border-zinc-800 px-4 py-3">
+              <div key={p.port} className="flex items-center justify-between rounded-xl bg-[#0A0A0A] border border-[#333333] px-4 py-3">
                 <div>
                   <span className="text-sm font-mono font-bold text-white">{p.port}</span>
-                  <span className="text-zinc-500 font-mono text-sm">/tcp</span>
-                  <span className="text-xs text-zinc-500 ml-3">{p.service}</span>
+                  <span className="text-[#666666] font-mono text-sm">/tcp</span>
+                  <span className="text-xs text-[#888888] ml-3">{p.service}</span>
                 </div>
-                <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full border
-                  ${p.risk === "critical" ? "bg-red-500 text-white border-red-500"
-                  : p.risk === "high"     ? "bg-orange-500 text-white border-orange-500"
-                  : p.risk === "medium"   ? "bg-amber-400 text-black border-amber-400"
-                  :                         "bg-sky-500 text-white border-sky-500"}`}>
+                <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full border ${
+                  p.risk === "critical" || p.risk === "high"
+                    ? "bg-[#FF3333] text-white border-[#FF3333]"
+                    : p.risk === "medium"
+                    ? "bg-[#A3A3A3] text-black border-[#A3A3A3]"
+                    : "bg-[#E0E0E0] text-black border-[#E0E0E0]"
+                }`}>
                   {p.risk.toUpperCase()}
                 </span>
               </div>
@@ -440,21 +446,21 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
               <KV label="Tamaño"  value={ev.fileInfo.size} />
               <KV label="Tipo"    value={ev.fileInfo.type} />
               {ev.fileInfo.entropy != null && (
-                <KV label="Entropía" value={`${ev.fileInfo.entropy.toFixed(2)} / 8.0`} accent="text-amber-400" />
+                <KV label="Entropía" value={`${ev.fileInfo.entropy.toFixed(2)} / 8.0`} accent="text-[#E0E0E0]" />
               )}
-              <KV label="MD5"    value={ev.fileInfo.md5}    accent="text-cyan-400" />
-              <KV label="SHA1"   value={ev.fileInfo.sha1}   accent="text-cyan-400" />
-              <KV label="SHA256" value={ev.fileInfo.sha256} accent="text-cyan-400" />
-              {ev.ssdeep && <KV label="ssdeep" value={ev.ssdeep} accent="text-zinc-400" />}
+              <KV label="MD5"    value={ev.fileInfo.md5}    accent="text-white font-mono" />
+              <KV label="SHA1"   value={ev.fileInfo.sha1}   accent="text-white font-mono" />
+              <KV label="SHA256" value={ev.fileInfo.sha256} accent="text-white font-mono" />
+              {ev.ssdeep && <KV label="ssdeep" value={ev.ssdeep} accent="text-[#888888]" />}
             </Panel>
             {ev.vtDetections && ev.vtDetections.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-zinc-400 mb-2">VirusTotal</div>
-                <div className="rounded-xl bg-zinc-950 border border-zinc-800 divide-y divide-zinc-800">
+                <div className="text-xs font-semibold text-[#A3A3A3] mb-2 uppercase tracking-wider">VirusTotal</div>
+                <div className="rounded-xl bg-[#0A0A0A] border border-[#333333] divide-y divide-[#222222]">
                   {ev.vtDetections.map((v, i) => (
                     <div key={i} className="flex justify-between px-4 py-2 text-xs font-mono">
-                      <span className="text-zinc-400">{v.engine}</span>
-                      <span className={v.result === "Clean" ? "text-emerald-400" : "text-red-400"}>{v.result}</span>
+                      <span className="text-[#888888]">{v.engine}</span>
+                      <span className={v.result === "Clean" ? "text-[#E0E0E0]" : "text-[#FF3333] font-bold"}>{v.result}</span>
                     </div>
                   ))}
                 </div>
@@ -462,19 +468,21 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
             )}
             {ev.permissions && ev.permissions.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-zinc-400 mb-2">Permisos APK</div>
+                <div className="text-xs font-semibold text-[#A3A3A3] mb-2 uppercase tracking-wider">Permisos APK</div>
                 <div className="space-y-2 max-h-64 overflow-auto pr-1">
                   {ev.permissions.map((p) => (
-                    <div key={p.name} className="rounded-xl bg-zinc-950 border border-zinc-800 p-3">
+                    <div key={p.name} className="rounded-xl bg-[#0A0A0A] border border-[#333333] p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`w-2 h-2 rounded-full ${
-                          p.severity === "critical" ? "bg-red-500"
-                          : p.severity === "high"   ? "bg-orange-500"
-                          : p.severity === "medium" ? "bg-amber-500"
-                          : "bg-sky-500"}`} />
-                        <span className="text-xs font-mono font-semibold text-zinc-200 truncate">{p.name}</span>
+                          p.severity === "critical" || p.severity === "high"
+                            ? "bg-[#FF3333]"
+                            : p.severity === "medium"
+                            ? "bg-[#A3A3A3]"
+                            : "bg-[#E0E0E0]"
+                        }`} />
+                        <span className="text-xs font-mono font-semibold text-white truncate">{p.name}</span>
                       </div>
-                      <p className="text-xs text-zinc-500 leading-relaxed">{p.description}</p>
+                      <p className="text-xs text-[#888888] leading-relaxed">{p.description}</p>
                     </div>
                   ))}
                 </div>
@@ -485,19 +493,19 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
 
         {/* IoCs */}
         {active === "iocs" && ev.iocs && (
-          <div className="rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden">
+          <div className="rounded-xl bg-[#0A0A0A] border border-[#333333] overflow-hidden">
             <table className="w-full text-xs font-mono">
-              <thead className="bg-zinc-900 text-zinc-500">
+              <thead className="bg-[#121212] text-[#666666]">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium">Tipo</th>
-                  <th className="text-left px-4 py-2.5 font-medium">Valor</th>
+                  <th className="text-left px-4 py-2.5 font-medium uppercase">Tipo</th>
+                  <th className="text-left px-4 py-2.5 font-medium uppercase">Valor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-[#222222]">
                 {ev.iocs.map((ioc, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-900/50">
-                    <td className="px-4 py-2.5 text-zinc-500 whitespace-nowrap">{ioc.type}</td>
-                    <td className="px-4 py-2.5 text-cyan-400 break-all">{ioc.value}</td>
+                  <tr key={idx} className="hover:bg-[#1A1A1A]/40">
+                    <td className="px-4 py-2.5 text-[#666666] whitespace-nowrap">{ioc.type}</td>
+                    <td className="px-4 py-2.5 text-white break-all font-mono">{ioc.value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -528,15 +536,17 @@ export function ThreatReport({
 
   const verdictStyle =
     result.verdict === "malicious"
-      ? { ring: "border-red-500/30",    bg: "from-red-950/20",    badge: "bg-red-500 text-white border-red-500",    label: "● MALICIOSO" }
+      ? { ring: "border-[#FF3333]/40", bg: "from-[#FF3333]/10", badge: "bg-[#FF3333] text-white border-[#FF3333]", label: "● MALICIOSO" }
       : result.verdict === "suspicious"
-      ? { ring: "border-amber-500/30",  bg: "from-amber-950/20",  badge: "bg-amber-500 text-black border-amber-500", label: "● SOSPECHOSO" }
-      : { ring: "border-emerald-500/30",bg: "from-emerald-950/15",badge: "bg-emerald-500 text-white border-emerald-500", label: "● LIMPIO" };
+      ? { ring: "border-[#A3A3A3]/40", bg: "from-[#A3A3A3]/10", badge: "bg-[#A3A3A3] text-black border-[#A3A3A3]", label: "● SOSPECHOSO" }
+      : { ring: "border-[#E0E0E0]/30", bg: "from-[#E0E0E0]/5", badge: "bg-[#E0E0E0] text-black border-[#E0E0E0]", label: "● LIMPIO" };
 
   const gradeColor =
-    result.riskScore >= 75 ? "text-red-400 border-red-500/30 bg-red-500/10"
-    : result.riskScore >= 40 ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
-    : "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+    result.riskScore >= 75
+      ? "text-[#FF3333] border-[#FF3333]/30 bg-[#FF3333]/10"
+      : result.riskScore >= 40
+      ? "text-[#A3A3A3] border-[#A3A3A3]/30 bg-[#A3A3A3]/10"
+      : "text-[#E0E0E0] border-[#E0E0E0]/30 bg-[#E0E0E0]/10";
 
   const copyJSON = () => {
     navigator.clipboard.writeText(JSON.stringify(result, null, 2));
@@ -551,52 +561,55 @@ export function ThreatReport({
   };
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-5 animate-glitch-in">
 
       {/* ── Resumen ejecutivo ── */}
-      <div className={`rounded-2xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4
-        ${result.verdict === "malicious"
-          ? "border-red-500/40 bg-red-500/5"
+      <div className={`rounded-2xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 ${
+        result.verdict === "malicious"
+          ? "border-[#FF3333]/40 bg-[#FF3333]/5"
           : result.verdict === "suspicious"
-          ? "border-amber-500/40 bg-amber-500/5"
-          : "border-emerald-500/40 bg-emerald-500/5"}`}>
+          ? "border-[#A3A3A3]/40 bg-[#A3A3A3]/5"
+          : "border-[#E0E0E0]/30 bg-[#E0E0E0]/5"
+      }`}>
         {/* Score grande */}
-        <div className={`text-5xl font-black tabular-nums shrink-0 leading-none
-          ${result.riskScore >= 75 ? "text-red-400"
-          : result.riskScore >= 40 ? "text-amber-400"
-          : "text-emerald-400"}`}>
+        <div className={`text-5xl font-black tabular-nums shrink-0 leading-none ${
+          result.riskScore >= 75 ? "text-[#FF3333]" : result.riskScore >= 40 ? "text-[#A3A3A3]" : "text-[#E0E0E0]"
+        }`}>
           {result.riskScore}
-          <span className="text-lg font-normal text-zinc-500 ml-1">/100</span>
+          <span className="text-lg font-normal text-[#666666] ml-1">/100</span>
         </div>
         {/* Separador vertical */}
-        <div className="hidden sm:block w-px h-12 bg-zinc-800 shrink-0" />
+        <div className="hidden sm:block w-px h-12 bg-[#333333] shrink-0" />
         {/* Texto */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className={`text-xs font-black tracking-widest px-3 py-1 rounded-full border
-              ${result.verdict === "malicious"  ? "bg-red-500 text-white border-red-500"
-              : result.verdict === "suspicious" ? "bg-amber-500 text-black border-amber-500"
-              : "bg-emerald-500 text-white border-emerald-500"}`}>
+            <span className={`text-xs font-black tracking-widest px-3 py-1 rounded-full border ${
+              result.verdict === "malicious"
+                ? "bg-[#FF3333] text-white border-[#FF3333]"
+                : result.verdict === "suspicious"
+                ? "bg-[#A3A3A3] text-black border-[#A3A3A3]"
+                : "bg-[#E0E0E0] text-black border-[#E0E0E0]"
+            }`}>
               {result.verdict === "malicious" ? "● MALICIOSO" : result.verdict === "suspicious" ? "● SOSPECHOSO" : "● LIMPIO"}
             </span>
-            <span className="text-xs font-mono text-zinc-500">
+            <span className="text-xs font-mono text-[#A3A3A3]">
               Grado {result.grade} · {result.type.toUpperCase()} · Confianza {result.confidence}
             </span>
           </div>
-          <p className="text-sm text-zinc-300 leading-relaxed line-clamp-2">{result.summary}</p>
+          <p className="text-sm text-[#D4D4D4] leading-relaxed line-clamp-2">{result.summary}</p>
         </div>
       </div>
 
       {/* ── Barra superior ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-zinc-500">
-          <span className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-[#666666]">
+          <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">
             ID: {result.id.slice(0, 16).toUpperCase()}
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+          <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">
             {formatDate(result.timestamp)}
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+          <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">
             {result.scanDurationMs} ms
           </span>
         </div>
@@ -604,20 +617,20 @@ export function ThreatReport({
           {onNewScan && (
             <button
               onClick={onNewScan}
-              className="px-4 py-2 rounded-lg bg-cyan-500 text-black text-sm font-bold hover:bg-cyan-400 transition"
+              className="px-4 py-2 rounded-lg bg-white text-black text-sm font-bold hover:bg-[#E0E0E0] transition neon-hover border border-transparent"
             >
               Nuevo análisis
             </button>
           )}
           <button
             onClick={copyJSON}
-            className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition"
+            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition"
           >
             Copiar JSON
           </button>
           <button
             onClick={shareUrl}
-            className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
@@ -626,7 +639,7 @@ export function ThreatReport({
           </button>
           <button
             onClick={() => window.print()}
-            className="hidden md:inline-flex px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition"
+            className="hidden md:inline-flex px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition"
           >
             Imprimir
           </button>
@@ -634,7 +647,7 @@ export function ThreatReport({
       </div>
 
       {/* ── Hero card ── */}
-      <div className={`rounded-2xl border overflow-hidden ${verdictStyle.ring} bg-gradient-to-br ${verdictStyle.bg} via-zinc-900 to-zinc-900`}>
+      <div className={`rounded-2xl border overflow-hidden ${verdictStyle.ring} bg-gradient-to-br ${verdictStyle.bg} via-[#121212] to-[#0A0A0A] shadow-2xl`}>
         <div className="p-6 md:p-7">
           <div className="grid md:grid-cols-[1fr_180px] gap-6">
             <div className="min-w-0">
@@ -643,7 +656,7 @@ export function ThreatReport({
                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-widest border ${verdictStyle.badge}`}>
                   {verdictStyle.label}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-mono bg-zinc-800 border border-zinc-700 text-zinc-300">
+                <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#1A1A1A] border border-[#333333] text-white">
                   {result.type.toUpperCase()} · {result.confidence}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-widest border ${gradeColor}`}>
@@ -652,17 +665,17 @@ export function ThreatReport({
               </div>
 
               {/* Indicador */}
-              <h1 className="text-lg md:text-xl font-semibold text-white break-all leading-snug">
+              <h1 className="text-lg md:text-xl font-semibold text-white break-all leading-snug font-mono">
                 {result.normalizedInput}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400 max-w-[640px]">
+              <p className="mt-2 text-sm leading-relaxed text-[#A3A3A3] max-w-[640px]">
                 {result.summary}
               </p>
 
               {/* Barra de riesgo */}
               <div className="mt-5">
                 <RiskBar score={result.riskScore} />
-                <div className="flex justify-between mt-1.5 text-[10px] font-mono tracking-widest text-zinc-600">
+                <div className="flex justify-between mt-1.5 text-[10px] font-mono tracking-widest text-[#666666]">
                   <span>0 — Seguro</span>
                   <span>100 — Crítico</span>
                 </div>
@@ -673,16 +686,17 @@ export function ThreatReport({
                 {(["critical", "high", "medium", "low", "info"] as Severity[]).map((sev) => (
                   <div
                     key={sev}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#333333]"
                   >
                     <span className={`w-2 h-2 rounded-full ${severityStyle[sev].dot}`} />
-                    <span className="text-[11px] font-mono text-zinc-400">{severityLabel(sev)}</span>
-                    <span className={`text-sm font-black ml-1
-                      ${sev === "critical" ? "text-red-400"
-                      : sev === "high"     ? "text-orange-400"
-                      : sev === "medium"   ? "text-amber-400"
-                      : sev === "low"      ? "text-sky-400"
-                      : "text-zinc-500"}`}>
+                    <span className="text-[11px] font-mono text-[#888888] uppercase">{severityLabel(sev)}</span>
+                    <span className={`text-sm font-black ml-1 ${
+                      sev === "critical" || sev === "high"
+                        ? "text-[#FF3333]"
+                        : sev === "medium"
+                        ? "text-[#A3A3A3]"
+                        : "text-[#666666]"
+                    }`}>
                       {counts[sev] || 0}
                     </span>
                   </div>
@@ -692,22 +706,22 @@ export function ThreatReport({
 
             {/* Gauge */}
             <div className="flex items-start justify-center md:justify-end">
-              <div className="bg-zinc-950/60 rounded-2xl border border-zinc-800 p-5 flex flex-col items-center gap-4">
+              <div className="bg-[#0A0A0A]/90 rounded-2xl border border-[#333333] p-5 flex flex-col items-center gap-4 shadow-xl">
                 <RiskGauge score={result.riskScore} grade={result.grade} verdict={result.verdict} />
                 <div className="w-full space-y-1.5 text-[11px] font-mono">
-                  <div className="flex justify-between text-zinc-500">
+                  <div className="flex justify-between text-[#666666]">
                     <span>Motor</span>
-                    <span className="text-zinc-300">Heurística v2.4</span>
+                    <span className="text-white">Heurística v0.1</span>
                   </div>
-                  <div className="flex justify-between text-zinc-500">
+                  <div className="flex justify-between text-[#666666]">
                     <span>Reglas</span>
-                    <span className="text-zinc-300">240 YARA</span>
+                    <span className="text-white">240 YARA</span>
                   </div>
-                  <div className="flex justify-between text-zinc-500">
+                  <div className="flex justify-between text-[#666666]">
                     <span>Feeds</span>
-                    <span className="text-zinc-300">MISP + OTX</span>
+                    <span className="text-white">MISP + OTX</span>
                   </div>
-                  <div className="pt-2 border-t border-zinc-800">
+                  <div className="pt-2 border-t border-[#222222]">
                     <SimulatedBadge />
                   </div>
                 </div>
@@ -718,10 +732,10 @@ export function ThreatReport({
       </div>
 
       {/* ── Hallazgos ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
-        <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold tracking-widest text-zinc-100">HALLAZGOS</h2>
-          <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
+      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 overflow-hidden shadow-xl">
+        <div className="px-5 py-4 border-b border-[#333333] flex items-center justify-between bg-[#0E0E0E]">
+          <h2 className="text-sm font-bold tracking-widest text-white uppercase">HALLAZGOS</h2>
+          <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#A3A3A3]">
             {result.findings.length} total
           </span>
         </div>
@@ -734,30 +748,30 @@ export function ThreatReport({
       <EvidenceTabs result={result} />
 
       {/* ── Recomendaciones ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-        <h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-4">RECOMENDACIONES</h3>
+      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 p-6 shadow-xl">
+        <h3 className="text-xs font-bold tracking-widest text-[#A3A3A3] mb-4 uppercase">RECOMENDACIONES</h3>
         <ul className="space-y-3">
           {result.recommendations.map((r, i) => (
-            <li key={i} className="flex gap-3 text-sm text-zinc-300">
-              <span className="mt-0.5 w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold shrink-0">
+            <li key={i} className="flex gap-3 text-sm text-[#D4D4D4]">
+              <span className="mt-0.5 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {i + 1}
               </span>
               <span className="leading-relaxed">{r}</span>
             </li>
           ))}
         </ul>
-        <div className="mt-5 rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3">
-          <span className="text-amber-400 text-base shrink-0">⚠</span>
-          <p className="text-xs leading-relaxed text-amber-200/80">
-            <span className="font-bold text-amber-300">Aviso legal: </span>
+        <div className="mt-5 rounded-xl bg-[#1A1A1A] border border-[#333333] p-4 flex gap-3">
+          <span className="text-white text-base shrink-0">ℹ</span>
+          <p className="text-xs leading-relaxed text-[#A3A3A3]">
+            <span className="font-bold text-white">Aviso legal: </span>
             Este análisis es heurístico y con fines educativos. No sustituye un sandbox dinámico ni la validación de un analista SOC. Para incidentes reales, escala al CERT correspondiente.
           </p>
         </div>
       </div>
 
       {/* Footer del reporte */}
-      <div className="text-center text-[11px] font-mono text-zinc-700 pb-2">
-        ThreatScan Engine v2.4 · {result.scanDurationMs} ms · Heurística + YARA + Reputación
+      <div className="text-center text-[11px] font-mono text-[#555555] pb-2">
+        SecScanner Engine v0.1 · {result.scanDurationMs} ms · Heurística + YARA + Reputación
       </div>
 
     </div>

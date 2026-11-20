@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { ScannerInput } from "@/components/ScannerInput";
 import { ScanningProgress } from "@/components/ScanningProgress";
 import { ThreatReport } from "@/components/ThreatReport";
@@ -9,7 +11,13 @@ import { ScanResult } from "@/lib/types";
 import { addScan, clearHistory, loadHistory } from "@/lib/storage";
 import { detectIndicatorType } from "@/lib/utils";
 
-// ── FAB flotante de historial (solo móvil, solo en vista de reporte) ──────────
+// Carga del BootSequence solo en el cliente para evitar mismatch de hidratación con sessionStorage
+const BootSequence = dynamic(
+  () => import("@/components/BootSequence").then((mod) => mod.BootSequence),
+  { ssr: false }
+);
+
+// ── FAB flotante de historial (móvil) ───────────────────────────────────────────
 function HistoryFab({
   history,
   onSelect,
@@ -23,31 +31,26 @@ function HistoryFab({
 
   return (
     <>
-      {/* Botón flotante — visible solo en < lg */}
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-xl text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition print:hidden"
+        className="lg:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#121212] border border-[#333333] shadow-2xl text-sm font-semibold text-white hover:bg-[#1A1A1A] transition print:hidden"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
         </svg>
         Historial
-        <span className="ml-0.5 text-xs font-mono text-zinc-500">{history.length}</span>
+        <span className="ml-0.5 text-xs font-mono text-[#666666]">{history.length}</span>
       </button>
 
-      {/* Drawer desde abajo */}
       {open && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end print:hidden">
-          {/* Overlay */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          {/* Panel */}
-          <div className="relative bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[75vh] flex flex-col">
-            {/* Handle */}
+          <div className="relative bg-[#0A0A0A] border-t border-[#333333] rounded-t-3xl max-h-[75vh] flex flex-col">
             <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-zinc-700" />
+              <div className="w-10 h-1 rounded-full bg-[#333333]" />
             </div>
             <div className="px-4 pb-4 overflow-y-auto flex-1">
               <HistoryPanel
@@ -71,8 +74,8 @@ export default function Home() {
   const [pendingInput, setPendingInput] = useState<{ input: string; fileName?: string } | null>(null);
   const [showInput, setShowInput] = useState(true);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [booted, setBooted] = useState(false);
 
-  // Tipo del indicador actual para pasos adaptativos
   const indicatorKind = pendingInput
     ? (pendingInput.fileName?.toLowerCase().endsWith(".apk") ? "apk"
        : pendingInput.fileName ? "file"
@@ -96,7 +99,6 @@ export default function Home() {
 
   const completeScan = () => {
     if (!pendingInput) return;
-    // Fix #3: diferir analyze() para no bloquear el render loop
     setTimeout(() => {
       try {
         const result = analyze(pendingInput.input, pendingInput.fileName);
@@ -137,48 +139,49 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#09090b]">
-      {/* Fondo: grid sutil + gradiente superior */}
-      <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:32px_32px] opacity-[0.05]" />
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(6,182,212,0.08),transparent)]" />
+    <div className="min-h-screen flex flex-col bg-[#0A0A0A] text-white relative">
+
+      {/* Boot Terminal Intro */}
+      {!booted && <BootSequence onComplete={() => setBooted(true)} />}
+
+      {/* CRT Scanline + Vignette Overlays */}
+      <div className="crt-scanline" />
+      <div className="vignette" />
+
+      {/* Retro Wireframe Background Grid */}
+      <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-zinc-950/80 border-b border-zinc-800/60">
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0A0A0A]/85 border-b border-[#333333]/80">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <button onClick={handleNewScan} className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center shrink-0 group-hover:bg-cyan-400 transition">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#09090b" strokeWidth="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
+          {/* Logo y Nombre */}
+          <button onClick={handleNewScan} className="flex items-center gap-3 group text-left">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-[#333333] group-hover:border-white transition-colors bg-[#121212] p-1">
+              <Image
+                src="/logo.png"
+                alt="SecScanner"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
             </div>
-            <div className="leading-none">
-              <div className="text-[13px] font-black tracking-[0.15em] text-white">THREATSCAN</div>
-              <div className="text-[10px] font-mono tracking-widest text-zinc-500 mt-0.5">THREAT INTELLIGENCE</div>
-            </div>
+            <div className="text-[13px] font-black tracking-[0.2em] text-white">SECSCANNER</div>
           </button>
 
-          {/* Estado del motor */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800">
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            Motor en línea
-          </div>
-
           {/* Acciones */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <a
               href="https://github.com/nuveneqra007-rgb/secscanner0.1"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-lg bg-[#121212] border border-[#333333] text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.69c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
               Código
             </a>
             <button
               onClick={handleNewScan}
-              className="text-xs font-bold px-4 py-2 rounded-lg bg-cyan-500 text-black hover:bg-cyan-400 transition"
+              className="text-xs font-bold px-4 py-2 rounded-lg bg-white text-black hover:bg-[#E0E0E0] transition neon-hover border border-transparent tracking-wider uppercase"
             >
               Nuevo escaneo
             </button>
@@ -187,78 +190,102 @@ export default function Home() {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-6 py-10 md:py-14">
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-6 py-10 md:py-16">
 
-        {/* ── LANDING: hero + input ── */}
+        {/* ── LANDING HERO (Estilo VirusTotal Centrado + Retro Wireframe) ── */}
         {showInput && !scanning && !selected && (
           <div className="flex flex-col items-center">
-            {/* Pill de estado */}
-            <div className="animate-fade-up inline-flex items-center gap-2 text-[11px] font-mono tracking-widest px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 mb-6">
-              <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-              Demo · Sin registro · 100% local
+
+            {/* Logo Central Prominente y Nombre estilo VirusTotal */}
+            <div className="animate-fade-up flex flex-col items-center mb-4">
+              <div className="relative mb-3 group">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border border-[#333333] bg-[#121212] p-3 shadow-2xl flex items-center justify-center">
+                  <Image
+                    src="/logo.png"
+                    alt="SecScanner"
+                    width={80}
+                    height={80}
+                    className="object-contain filter contrast-125"
+                    priority
+                  />
+                </div>
+                <div className="absolute -inset-1 rounded-2xl bg-white/5 blur-md -z-10" />
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl font-black tracking-[0.25em] text-center text-white mb-2">
+                SECSCANNER
+              </h1>
             </div>
 
-            {/* Título */}
-            <h1 className="animate-fade-up delay-100 text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-center leading-[0.92] mb-4">
-              <span className="text-white">Detecta amenazas</span>
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">en segundos</span>
-            </h1>
-
-            {/* Subtítulo */}
-            <p className="animate-fade-up delay-150 text-sm md:text-[15px] text-zinc-400 text-center max-w-[480px] leading-relaxed mb-10">
-              Pega una <span className="text-zinc-200 font-medium">URL, IP, dominio o hash</span> y obtén un reporte técnico completo: reputación, DNS, TLS, YARA y más.
+            {/* Subtítulo estilo VirusTotal */}
+            <p className="animate-fade-up delay-100 text-sm sm:text-[15px] font-mono text-[#A3A3A3] text-center max-w-[580px] leading-relaxed mb-10">
+              Analiza archivos sospechosos, dominios, IPs y URLs para detectar malware y otras anomalías en tiempo real.
             </p>
 
-            {/* Input principal */}
-            <div className="animate-fade-up delay-200 w-full flex justify-center">
+            {/* Input Principal con Tabs estilo VirusTotal */}
+            <div className="animate-fade-up delay-150 w-full mb-16">
               <ScannerInput onAnalyze={startScan} loading={false} />
             </div>
 
             {/* Separador */}
-            <div className="w-full max-w-[760px] mt-12 mb-8 flex items-center gap-4">
-              <div className="h-px flex-1 bg-zinc-800" />
-              <span className="text-[11px] font-mono tracking-widest text-zinc-600">CÓMO FUNCIONA</span>
-              <div className="h-px flex-1 bg-zinc-800" />
+            <div className="w-full max-w-[800px] mb-10 flex items-center gap-4">
+              <div className="h-px flex-1 bg-[#222222]" />
+              <span className="text-[11px] font-mono tracking-[0.2em] text-[#666666] uppercase">Arquitectura del Escáner</span>
+              <div className="h-px flex-1 bg-[#222222]" />
             </div>
 
-            {/* Pasos */}
-            <div className="w-full max-w-[760px] grid sm:grid-cols-3 gap-3 mb-12">
-              {[
-                {
-                  step: "01",
-                  color: "cyan",
-                  title: "Ingesta y detección",
-                  desc: "Detecta automáticamente el tipo de indicador y sanitiza la entrada.",
-                },
-                {
-                  step: "02",
-                  color: "violet",
-                  title: "Correlación multi-fuente",
-                  desc: "WHOIS, DNS, TLS, reputación global y heurística en paralelo.",
-                },
-                {
-                  step: "03",
-                  color: "emerald",
-                  title: "Reporte accionable",
-                  desc: "Score 0–100, severidades, IoCs y recomendaciones para tu SIEM.",
-                },
-              ].map(({ step, color, title, desc }) => (
-                <div key={step} className="rounded-2xl bg-zinc-900/40 border border-zinc-800 p-5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black mb-3
-                    ${color === "cyan" ? "bg-cyan-500/15 border border-cyan-500/20 text-cyan-400" :
-                      color === "violet" ? "bg-violet-500/15 border border-violet-500/20 text-violet-400" :
-                      "bg-emerald-500/15 border border-emerald-500/20 text-emerald-400"}`}>
-                    {step}
+            {/* Sección "Cómo funciona" con Líneas Conectoras SVG Animadas */}
+            <div className="w-full max-w-[800px] mb-16 relative">
+              {/* Línea conectora SVG animada en desktop */}
+              <div className="hidden sm:block absolute top-[28px] left-[15%] right-[15%] h-[2px] -z-0 pointer-events-none">
+                <svg className="w-full h-4 overflow-visible">
+                  <line
+                    x1="0"
+                    y1="0"
+                    x2="100%"
+                    y2="0"
+                    stroke="#444444"
+                    strokeWidth="2"
+                    strokeDasharray="6 6"
+                    className="animate-pulse"
+                  />
+                </svg>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4 relative z-10">
+                {[
+                  {
+                    step: "01",
+                    title: "Ingesta y Detección",
+                    desc: "Identificación de tipo de indicador (hash, IP, URL o APK), sanitización y normalización RFC.",
+                  },
+                  {
+                    step: "02",
+                    title: "Correlación Multi-fuente",
+                    desc: "Análisis paralelo de WHOIS, DNS, TLS, entropía de Shannon, reglas YARA y reputación.",
+                  },
+                  {
+                    step: "03",
+                    title: "Reporte Accionable",
+                    desc: "Puntuación de riesgo 0–100, veredicto, hallazgos por severidad e IoCs listos para SIEM.",
+                  },
+                ].map(({ step, title, desc }) => (
+                  <div
+                    key={step}
+                    className="rounded-2xl bg-[#121212]/90 border border-[#333333] p-5 hover:border-white/40 transition-colors shadow-lg"
+                  >
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-mono font-black mb-3 bg-[#1A1A1A] border border-[#333333] text-white">
+                      {step}
+                    </div>
+                    <div className="text-sm font-semibold text-white mb-1.5">{title}</div>
+                    <div className="text-xs text-[#888888] leading-relaxed font-mono">{desc}</div>
                   </div>
-                  <div className="text-sm font-semibold text-zinc-200 mb-1">{title}</div>
-                  <div className="text-xs text-zinc-500 leading-relaxed">{desc}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             {/* Historial */}
-            <div className="w-full max-w-[760px]">
+            <div className="w-full max-w-[800px]">
               <HistoryPanel
                 history={history}
                 onSelect={handleSelect}
@@ -266,58 +293,54 @@ export default function Home() {
                 selectedId={undefined}
               />
             </div>
+
           </div>
         )}
 
-        {/* ── ESCANEANDO ── */}
+        {/* ── ESCANEANDO EN PROGRESO ── */}
         {scanning && pendingInput && (
           <div className="flex flex-col items-center py-6">
-            {/* Indicador analizado */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-sm font-mono text-zinc-300 mb-8">
-              <span className="w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
-              <span className="text-zinc-500">Analizando:</span>
-              <span className="text-white truncate max-w-[260px] sm:max-w-[400px]">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#121212] border border-[#333333] text-sm font-mono text-[#A3A3A3] mb-8 shadow-md">
+              <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+              <span className="text-[#666666]">Procesando:</span>
+              <span className="text-white truncate max-w-[260px] sm:max-w-[420px]">
                 {pendingInput.input.slice(0, 80)}
               </span>
             </div>
 
             <ScanningProgress onComplete={completeScan} indicatorKind={indicatorKind} />
 
-            {/* Dato educativo */}
-            <div className="mt-8 max-w-[560px] rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 text-center">
-              <div className="text-[10px] font-mono tracking-widest text-zinc-600 mb-2">¿SABÍAS QUE?</div>
-              <p className="text-xs leading-relaxed text-zinc-400">
-                El 70% de dominios de phishing tienen menos de 30 días de antigüedad. ThreatScan prioriza la edad WHOIS, la entropía del dominio y el ASN para detectar campañas desechables antes de que aparezcan en las listas negras.
+            <div className="mt-8 max-w-[620px] rounded-2xl border border-[#333333] bg-[#121212]/80 p-5 text-center shadow-lg">
+              <div className="text-[10px] font-mono tracking-widest text-[#666666] mb-2 uppercase">Heurística & Threat Intelligence</div>
+              <p className="text-xs leading-relaxed text-[#888888] font-mono">
+                El 70% de dominios maliciosos tienen menos de 30 días de vida. SecScanner analiza la edad WHOIS, la entropía del dominio y los bloques ASN para detectar infraestructura desechable antes de su inclusión en feeds estáticos.
               </p>
             </div>
           </div>
         )}
 
-        {/* ── REPORTE ── */}
+        {/* ── REPORTE GENERADO ── */}
         {selected && !scanning && (
-          <div className="animate-fade-in grid lg:grid-cols-[1fr_320px] gap-6 items-start">
-            {/* Reporte principal */}
+          <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
             <div className="min-w-0">
               <button
                 onClick={handleNewScan}
-                className="mb-5 inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition print:hidden"
+                className="mb-5 inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition print:hidden"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
                 </svg>
-                Volver
+                Volver al buscador
               </button>
               <ThreatReport result={selected} onNewScan={handleNewScan} />
             </div>
 
-            {/* Sidebar — sticky en desktop, apilado en móvil */}
+            {/* Sidebar Sticky */}
             <div className="lg:sticky lg:top-[76px] flex flex-col gap-4 print:hidden">
-              {/* Escaneo rápido — solo en desktop */}
-              <div className="hidden lg:block rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-                <div className="text-[10px] font-bold tracking-widest text-zinc-500 mb-3">ESCANEO RÁPIDO</div>
+              <div className="hidden lg:block rounded-2xl border border-[#333333] bg-[#121212]/80 p-4 shadow-xl">
+                <div className="text-[10px] font-bold tracking-widest text-[#666666] mb-3 uppercase font-mono">Escaneo Rápido</div>
                 <ScannerInput onAnalyze={startScan} loading={false} />
               </div>
-              {/* Historial */}
               <HistoryPanel
                 history={history}
                 onSelect={handleSelect}
@@ -328,38 +351,38 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── FAB historial en móvil (solo en vista de reporte) ── */}
+        {/* FAB Historial en Móvil */}
         {selected && !scanning && history.length > 0 && (
           <HistoryFab history={history} onSelect={handleSelect} selectedId={selected.id} />
         )}
 
-        {/* Estado huérfano: sin input, sin selección, sin escaneo */}
+        {/* Estado Huérfano */}
         {!showInput && !selected && !scanning && !scanError && (
-          <div className="max-w-[760px] mx-auto">
+          <div className="max-w-[800px] mx-auto">
             <HistoryPanel history={history} onSelect={handleSelect} onClear={handleClear} />
           </div>
         )}
 
-        {/* ── ERROR ── */}
+        {/* ── ERROR EN EL ESCANEO ── */}
         {scanError && (
-          <div className="max-w-[560px] mx-auto flex flex-col items-center gap-5 py-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400">
+          <div className="max-w-[560px] mx-auto flex flex-col items-center gap-5 py-10 text-center animate-glitch-in">
+            <div className="w-14 h-14 rounded-2xl bg-[#FF3333]/10 border border-[#FF3333]/20 flex items-center justify-center text-[#FF3333]">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
               </svg>
             </div>
             <div>
               <h2 className="text-lg font-bold text-white mb-2">Error en el análisis</h2>
-              <p className="text-sm text-zinc-400 leading-relaxed">
+              <p className="text-sm text-[#A3A3A3] leading-relaxed">
                 No se pudo procesar el indicador. Verifica que el formato sea válido e inténtalo de nuevo.
               </p>
-              <div className="mt-3 rounded-xl bg-zinc-900 border border-zinc-800 px-4 py-2.5 text-xs font-mono text-red-400 text-left break-all">
+              <div className="mt-3 rounded-xl bg-[#121212] border border-[#333333] px-4 py-2.5 text-xs font-mono text-[#FF3333] text-left break-all">
                 {scanError}
               </div>
             </div>
             <button
               onClick={handleNewScan}
-              className="px-6 py-2.5 rounded-xl bg-cyan-500 text-black font-bold text-sm hover:bg-cyan-400 transition"
+              className="px-6 py-2.5 rounded-xl bg-white text-black font-bold text-sm tracking-wider uppercase hover:bg-[#E0E0E0] transition neon-hover border border-transparent"
             >
               Intentar de nuevo
             </button>
@@ -368,12 +391,12 @@ export default function Home() {
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-zinc-900 mt-6">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-zinc-600">
-          <span>© 2025 ThreatScan — Proyecto de portafolio · Next.js · Tailwind · TypeScript</span>
+      <footer className="border-t border-[#1A1A1A] mt-12 bg-[#0A0A0A]">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-[#666666]">
+          <span>© 2025 SecScanner — Threat Intelligence Framework · Local-First</span>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800">LocalStorage · Sin tracking</span>
-            <span className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800">MIT</span>
+            <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">LocalStorage · Sin tracking</span>
+            <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">MIT</span>
           </div>
         </div>
       </footer>

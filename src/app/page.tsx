@@ -14,6 +14,7 @@ export default function Home() {
   const [scanning, setScanning] = useState(false);
   const [pendingInput, setPendingInput] = useState<{ input: string; fileName?: string } | null>(null);
   const [showInput, setShowInput] = useState(true);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -32,12 +33,19 @@ export default function Home() {
 
   const completeScan = () => {
     if (!pendingInput) return;
-    const result = analyze(pendingInput.input, pendingInput.fileName);
-    const nextHist = addScan(result);
-    setHistory(nextHist);
-    setSelected(result);
-    setScanning(false);
-    setPendingInput(null);
+    try {
+      const result = analyze(pendingInput.input, pendingInput.fileName);
+      const nextHist = addScan(result);
+      setHistory(nextHist);
+      setSelected(result);
+      setScanning(false);
+      setPendingInput(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setScanError(msg);
+      setScanning(false);
+      setPendingInput(null);
+    }
   };
 
   const handleSelect = (r: ScanResult) => {
@@ -58,6 +66,7 @@ export default function Home() {
     setShowInput(true);
     setScanning(false);
     setPendingInput(null);
+    setScanError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -252,9 +261,35 @@ export default function Home() {
         )}
 
         {/* Estado huérfano: sin input, sin selección, sin escaneo */}
-        {!showInput && !selected && !scanning && (
+        {!showInput && !selected && !scanning && !scanError && (
           <div className="max-w-[760px] mx-auto">
             <HistoryPanel history={history} onSelect={handleSelect} onClear={handleClear} />
+          </div>
+        )}
+
+        {/* ── ERROR ── */}
+        {scanError && (
+          <div className="max-w-[560px] mx-auto flex flex-col items-center gap-5 py-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white mb-2">Error en el análisis</h2>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                No se pudo procesar el indicador. Verifica que el formato sea válido e inténtalo de nuevo.
+              </p>
+              <div className="mt-3 rounded-xl bg-zinc-900 border border-zinc-800 px-4 py-2.5 text-xs font-mono text-red-400 text-left break-all">
+                {scanError}
+              </div>
+            </div>
+            <button
+              onClick={handleNewScan}
+              className="px-6 py-2.5 rounded-xl bg-cyan-500 text-black font-bold text-sm hover:bg-cyan-400 transition"
+            >
+              Intentar de nuevo
+            </button>
           </div>
         )}
       </main>

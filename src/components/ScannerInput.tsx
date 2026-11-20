@@ -11,6 +11,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "archivo", label: "Archivo / APK" },
 ];
 
+const VALIDATORS: Record<Tab, (v: string) => boolean> = {
+  url:     (v) => v.length > 4 && /[a-z0-9.-]/i.test(v),
+  ip:      (v) => /^[\d.:a-fA-F]+$/.test(v) && v.length >= 7,
+  hash:    (v) => /^[a-fA-F0-9]{32,64}$/.test(v),
+  archivo: () => false, // se valida por fileName
+};
+
 const PLACEHOLDERS: Record<Tab, string> = {
   url:     "https://ejemplo.com o dominio.xyz",
   ip:      "192.168.1.1 o 2001:db8::1",
@@ -49,7 +56,7 @@ export function ScannerInput({
 
   const detectedType = value.trim() ? detectIndicatorType(value.trim()) : null;
   const isFileTab = tab === "archivo";
-  const isValid = isFileTab ? !!fileName : value.trim().length > 3;
+  const isValid = isFileTab ? !!fileName : VALIDATORS[tab](value.trim());
 
   const handleAnalyze = () => {
     if (!isValid) return;
@@ -180,6 +187,19 @@ export function ScannerInput({
             accept=".apk,.zip,.exe,.pdf,.js,*/*"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />
+
+          {/* Hint de formato inválido */}
+          {value.trim().length > 3 && !isFileTab && !VALIDATORS[tab](value.trim()) && (
+            <div className="mt-2 flex items-center gap-2 text-xs font-mono text-amber-400">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              {tab === "ip"   && "Formato esperado: 192.168.1.1 o dirección IPv6"}
+              {tab === "hash" && "Formato esperado: 32, 40 o 64 caracteres hexadecimales"}
+              {tab === "url"  && "Introduce una URL o dominio válido"}
+            </div>
+          )}
 
           {/* Tipo detectado */}
           {detectedType && value && !isFileTab && (

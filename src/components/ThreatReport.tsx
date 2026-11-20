@@ -51,7 +51,22 @@ const SEVERITY_ICONS: Record<Severity, string> = {
 
 type EvidenceTab = "whois" | "dns" | "ssl" | "headers" | "redirects" | "geo" | "reputation" | "ports" | "file" | "iocs";
 
-// ── Sub-componentes ───────────────────────────────────────────────────────────
+// ── Badge de datos simulados ──────────────────────────────────────────────────
+
+function SimulatedBadge() {
+  return (
+    <span
+      title="Estos datos son generados heurísticamente con fines de demostración. No representan información real del indicador."
+      className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 cursor-help"
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      Simulado
+    </span>
+  );
+}
 
 function SeverityBadge({ s }: { s: Severity }) {
   return (
@@ -231,19 +246,24 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex border-b border-zinc-800 overflow-x-auto">
-        {availableTabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActive(t.id)}
-            className={`px-4 py-3 text-[11px] font-bold tracking-wider whitespace-nowrap transition-colors
-              ${active === t.id
-                ? "text-white border-b-2 border-cyan-500 -mb-px bg-zinc-900/60"
-                : "text-zinc-500 hover:text-zinc-300"}`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex items-center border-b border-zinc-800 overflow-x-auto">
+        <div className="flex">
+          {availableTabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActive(t.id)}
+              className={`px-4 py-3 text-[11px] font-bold tracking-wider whitespace-nowrap transition-colors
+                ${active === t.id
+                  ? "text-white border-b-2 border-cyan-500 -mb-px bg-zinc-900/60"
+                  : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto px-4 shrink-0">
+          <SimulatedBadge />
+        </div>
       </div>
 
       {/* Contenido del tab activo */}
@@ -633,6 +653,9 @@ export function ThreatReport({
                   <div className="flex justify-between text-zinc-500">
                     <span>Feeds</span>
                     <span className="text-zinc-300">MISP + OTX</span>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-800">
+                    <SimulatedBadge />
                   </div>
                 </div>
               </div>

@@ -70,7 +70,7 @@ export function analyze(input: string, fileName?: string): ScanResult {
     verdict,
     riskScore: Math.round(score),
     grade,
-    confidence: score>70 ? "Alta" : score>40 ? "Media" : "Alta",
+    confidence: score>70 ? "Alta" : score>40 ? "Media" : "Baja",
     summary,
     findings,
     evidence,

@@ -9,20 +9,17 @@ export function loadHistory(): ScanResult[] {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
+      // Primera visita: cargar seed data
       const seed = getSeedScans();
       saveHistory(seed);
       return seed;
     }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const seed = getSeedScans();
-      saveHistory(seed);
-      return seed;
-    }
+    if (!Array.isArray(parsed)) return [];
+    // Array vacío = el usuario limpió explícitamente → respetar esa decisión
     return parsed as ScanResult[];
   } catch {
-    const seed = getSeedScans();
-    return seed;
+    return [];
   }
 }
 
@@ -42,5 +39,7 @@ export function addScan(result: ScanResult) {
 
 export function clearHistory() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(KEY);
+  // Guardar array vacío en lugar de borrar la clave,
+  // así loadHistory sabe que el usuario limpió explícitamente
+  saveHistory([]);
 }

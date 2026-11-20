@@ -519,6 +519,8 @@ export function ThreatReport({
   result: ScanResult;
   onNewScan?: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
   const counts = result.findings.reduce((acc, f) => {
     acc[f.severity] = (acc[f.severity] || 0) + 1;
     return acc;
@@ -538,6 +540,14 @@ export function ThreatReport({
 
   const copyJSON = () => {
     navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+  };
+
+  const shareUrl = () => {
+    const url = `${window.location.origin}/scan/${result.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
@@ -570,6 +580,15 @@ export function ThreatReport({
             className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition"
           >
             Copiar JSON
+          </button>
+          <button
+            onClick={shareUrl}
+            className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-1.5"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            {copied ? "¡Copiado!" : "Compartir"}
           </button>
           <button
             onClick={() => window.print()}

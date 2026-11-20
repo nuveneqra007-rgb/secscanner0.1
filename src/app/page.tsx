@@ -8,6 +8,61 @@ import { analyze } from "@/lib/analyzer";
 import { ScanResult } from "@/lib/types";
 import { addScan, clearHistory, loadHistory } from "@/lib/storage";
 
+// ── FAB flotante de historial (solo móvil, solo en vista de reporte) ──────────
+function HistoryFab({
+  history,
+  onSelect,
+  selectedId,
+}: {
+  history: ScanResult[];
+  onSelect: (r: ScanResult) => void;
+  selectedId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Botón flotante — visible solo en < lg */}
+      <button
+        onClick={() => setOpen(true)}
+        className="lg:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-xl text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition print:hidden"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+        </svg>
+        Historial
+        <span className="ml-0.5 text-xs font-mono text-zinc-500">{history.length}</span>
+      </button>
+
+      {/* Drawer desde abajo */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end print:hidden">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+          {/* Panel */}
+          <div className="relative bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[75vh] flex flex-col">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-zinc-700" />
+            </div>
+            <div className="px-4 pb-4 overflow-y-auto flex-1">
+              <HistoryPanel
+                history={history}
+                onSelect={(r) => { onSelect(r); setOpen(false); }}
+                onClear={() => {}}
+                selectedId={selectedId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function Home() {
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [selected, setSelected] = useState<ScanResult | null>(null);
@@ -232,7 +287,7 @@ export default function Home() {
             <div className="min-w-0">
               <button
                 onClick={handleNewScan}
-                className="mb-5 inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition"
+                className="mb-5 inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition print:hidden"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
@@ -243,8 +298,8 @@ export default function Home() {
             </div>
 
             {/* Sidebar — sticky en desktop, apilado en móvil */}
-            <div className="lg:sticky lg:top-[76px] flex flex-col gap-4">
-              {/* Escaneo rápido — oculto en móvil (el botón "Nuevo análisis" del reporte lo cubre) */}
+            <div className="lg:sticky lg:top-[76px] flex flex-col gap-4 print:hidden">
+              {/* Escaneo rápido — solo en desktop */}
               <div className="hidden lg:block rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
                 <div className="text-[10px] font-bold tracking-widest text-zinc-500 mb-3">ESCANEO RÁPIDO</div>
                 <ScannerInput onAnalyze={startScan} loading={false} />
@@ -258,6 +313,11 @@ export default function Home() {
               />
             </div>
           </div>
+        )}
+
+        {/* ── FAB historial en móvil (solo en vista de reporte) ── */}
+        {selected && !scanning && history.length > 0 && (
+          <HistoryFab history={history} onSelect={handleSelect} selectedId={selected.id} />
         )}
 
         {/* Estado huérfano: sin input, sin selección, sin escaneo */}

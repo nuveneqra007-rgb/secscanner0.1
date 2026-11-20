@@ -39,3 +39,62 @@ code, pre, .font-mono {
 .overflow-x-auto::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Estilos de impresión ── */
+@media print {
+  /* Fondo negro → blanco */
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Ocultar elementos de navegación */
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Forzar colores legibles */
+  .text-zinc-400,
+  .text-zinc-500,
+  .text-zinc-600 {
+    color: #374151 !important;
+  }
+  .text-white,
+  .text-zinc-100,
+  .text-zinc-200,
+  .text-zinc-300 {
+    color: #111827 !important;
+  }
+
+  /* Bordes visibles en papel */
+  [class*="border-zinc"] {
+    border-color: #d1d5db !important;
+  }
+
+  /* Fondos oscuros → muy claro */
+  [class*="bg-zinc-9"],
+  [class*="bg-zinc-8"],
+  [class*="bg-zinc-950"] {
+    background: #f9fafb !important;
+  }
+
+  /* Sin sombras ni blur */
+  [class*="backdrop-blur"],
+  [class*="shadow"] {
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Sin saltos de página dentro de cards */
+  .rounded-2xl,
+  .rounded-xl {
+    break-inside: avoid;
+  }
+
+  /* Gauge SVG legible */
+  svg circle[stroke*="rgba"] {
+    stroke: #e5e7eb !important;
+  }
+}

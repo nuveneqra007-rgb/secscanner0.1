@@ -18,6 +18,9 @@ import { runHeuristics } from "@/lib/services/heuristic";
 import { analyzeBuffer } from "@/lib/services/file-static";
 import { gradeFromScore, verdictFromScore, detectIndicatorType } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Permite hasta 30 segundos para resolver consultas en paralelo en Vercel Serverless
+
 interface ScanRequestBody {
   indicator: string;
   type?: IndicatorType;

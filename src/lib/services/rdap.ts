@@ -6,6 +6,24 @@ export interface RdapServiceResult {
   riskContribution: number;
 }
 
+const MULTI_PART_TLDS = new Set([
+  "com.ar", "co.uk", "gov.co", "com.br", "org.uk", "edu.co", "com.mx",
+  "gob.es", "co.jp", "com.co", "net.ar", "org.ar", "com.pe", "edu.pe",
+  "org.pe", "com.cl", "gob.mx", "org.mx", "co.nz", "com.au", "net.au"
+]);
+
+function getApexDomain(domain: string): string {
+  const parts = domain.trim().toLowerCase().replace(/^https?:\/\//i, "").split("/")[0].split(":")[0].split(".");
+  if (parts.length <= 2) return parts.join(".");
+
+  const lastTwo = parts.slice(-2).join(".");
+  if (MULTI_PART_TLDS.has(lastTwo) && parts.length >= 3) {
+    return parts.slice(-3).join(".");
+  }
+
+  return parts.slice(-2).join(".");
+}
+
 /**
  * Consulta el registro de dominio real mediante el protocolo estándar RDAP (sucesor JSON de WHOIS).
  */
@@ -13,9 +31,8 @@ export async function queryRdap(domain: string): Promise<RdapServiceResult> {
   const findings: Finding[] = [];
   let riskScore = 0;
 
-  // Extraer dominio base (ej. "sub.example.com" -> "example.com")
-  const parts = domain.trim().toLowerCase().replace(/^https?:\/\//i, "").split("/")[0].split(":")[0].split(".");
-  const cleanDomain = parts.length >= 2 ? parts.slice(-2).join(".") : domain;
+  // Extraer dominio base (ej. "sub.example.com" -> "example.com" o "banco.com.ar")
+  const cleanDomain = getApexDomain(domain);
 
   try {
     const controller = new AbortController();

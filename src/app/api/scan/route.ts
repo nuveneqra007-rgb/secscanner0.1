@@ -59,34 +59,74 @@ function generateSummary(verdict: Verdict, type: IndicatorType): string {
   return `No se identificaron firmas de compromiso ni anomalías en las consultas en vivo de infraestructura y reputación. Indicador confiable.`;
 }
 
+function getAllowedOrigin(request: Request): string {
+  const origin = request.headers.get("origin");
+  if (!origin) return "*";
+
+  const trusted = [
+    "https://secscanner0-1.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3005",
+  ];
+
+  if (process.env.VERCEL_URL) {
+    trusted.push(`https://${process.env.VERCEL_URL}`);
+  }
+
+  if (
+    trusted.includes(origin) ||
+    /^https:\/\/secscanner0-1(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)
+  ) {
+    return origin;
+  }
+
+  return "";
+}
+
 export async function OPTIONS(request: Request) {
-  const origin = request.headers.get("origin") || "*";
+  const allowedOrigin = getAllowedOrigin(request);
+  if (!allowedOrigin) {
+    return new NextResponse(null, { status: 403 });
+  }
+
   return new NextResponse(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Origin": allowedOrigin,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
       "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
     },
   });
 }
 
 export async function POST(request: Request) {
   const startTime = Date.now();
-  const origin = request.headers.get("origin") || "*";
+  const allowedOrigin = getAllowedOrigin(request);
+
+  if (request.headers.get("origin") && !allowedOrigin) {
+    return NextResponse.json(
+      { error: "Origen no autorizado por política CORS." },
+      { status: 403 }
+    );
+  }
 
   try {
     // 1. Control de Tasa (Rate Limiting)
     const clientIp = getClientIp(request.headers);
     const rateCheck = checkRateLimit(clientIp);
 
-    const rateHeaders = {
+    const rateHeaders: Record<string, string> = {
       "X-RateLimit-Limit": rateCheck.limit.toString(),
       "X-RateLimit-Remaining": rateCheck.remaining.toString(),
       "X-RateLimit-Reset": rateCheck.resetAt.toString(),
-      "Access-Control-Allow-Origin": origin,
     };
+
+    if (allowedOrigin) {
+      rateHeaders["Access-Control-Allow-Origin"] = allowedOrigin;
+      rateHeaders["Vary"] = "Origin";
+    }
 
     if (!rateCheck.allowed) {
       console.warn(JSON.stringify({
@@ -213,10 +253,10 @@ export async function POST(request: Request) {
     if ((indicatorType === "file" || indicatorType === "apk") && body.fileBase64) {
       const buffer = Buffer.from(body.fileBase64, "base64");
 
-      // Límite de seguridad: máximo 20 MB
-      if (buffer.length > 20 * 1024 * 1024) {
+      // Límite de seguridad: máximo 10 MB para prevenir DoS / agotamiento de memoria
+      if (buffer.length > 10 * 1024 * 1024) {
         return NextResponse.json(
-          { error: "El archivo supera el tamaño máximo permitido de 20 MB." },
+          { error: "El archivo supera el tamaño máximo permitido de 10 MB." },
           { status: 400, headers: rateHeaders }
         );
       }
@@ -615,7 +655,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: "Error interno del servidor al procesar el análisis." },
-      { status: 500, headers: { "Access-Control-Allow-Origin": origin } }
+      {
+        status: 500,
+        headers: allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin, "Vary": "Origin" } : {},
+      }
     );
   }
 }

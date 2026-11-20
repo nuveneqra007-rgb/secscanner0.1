@@ -67,18 +67,25 @@ export function checkRateLimit(clientIp: string): {
  * Extrae la IP pública del cliente a partir de las cabeceras HTTP de la petición.
  */
 export function getClientIp(headers: Headers): string {
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    // Tomar la primera IP de la lista de proxies
-    const firstIp = forwardedFor.split(",")[0].trim();
-    if (firstIp) return firstIp;
-  }
+  // 1. Cabeceras confiables inyectadas por la infraestructura perimetral (tamper-proof)
+  const vercelIp = headers.get("x-vercel-forwarded-for");
+  if (vercelIp) return vercelIp.split(",")[0].trim();
 
   const realIp = headers.get("x-real-ip");
   if (realIp) return realIp.trim();
 
   const cfConnectingIp = headers.get("cf-connecting-ip");
   if (cfConnectingIp) return cfConnectingIp.trim();
+
+  // 2. Si solo existe x-forwarded-for genérico, tomar la IP agregada por el proxy perimetral más cercano
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const parts = forwardedFor.split(",").map(p => p.trim()).filter(Boolean);
+    // En arquitecturas con proxy reverso, el último o penúltimo elemento es agregado por el borde
+    if (parts.length > 0) {
+      return parts[parts.length - 1];
+    }
+  }
 
   return "127.0.0.1";
 }

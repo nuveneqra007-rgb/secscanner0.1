@@ -183,10 +183,25 @@ export function analyzeBuffer(buffer: Buffer, fileName: string): FileAnalysisRes
  * Escanea el contenedor APK (formato ZIP) para extraer declaraciones de permisos Android.
  */
 function extractAndroidPermissions(buffer: Buffer, findings: Finding[]): NonNullable<TechnicalEvidence["permissions"]> {
-  const contentStr = buffer.toString("latin1");
+  const matchesSet = new Set<string>();
   const permissionRegex = /android\.permission\.[A-Z_0-9]+/g;
-  const matches = Array.from(new Set(contentStr.match(permissionRegex) || []));
 
+  // Procesar en chunks de 512 KB con solapamiento para no agotar el heap de V8 en Serverless
+  const CHUNK_SIZE = 512 * 1024;
+  const OVERLAP = 256;
+  const maxScanBytes = Math.min(buffer.length, 4 * 1024 * 1024); // Estructura de manifest se ubica en los primeros 4 MB
+
+  for (let offset = 0; offset < maxScanBytes; offset += (CHUNK_SIZE - OVERLAP)) {
+    const end = Math.min(offset + CHUNK_SIZE, buffer.length);
+    const chunkStr = buffer.subarray(offset, end).toString("latin1");
+    const found = chunkStr.match(permissionRegex);
+    if (found) {
+      for (const p of found) matchesSet.add(p);
+    }
+    if (end >= buffer.length) break;
+  }
+
+  const matches = Array.from(matchesSet);
   const permissions: NonNullable<TechnicalEvidence["permissions"]> = [];
 
   for (const perm of matches) {

@@ -1,5 +1,6 @@
+import dns from "node:dns/promises";
 import { Finding, TechnicalEvidence } from "../types";
-import { isSsrfTarget } from "../server/ssrf-guard";
+import { isPrivateIp, isSsrfTarget } from "../server/ssrf-guard";
 
 export interface HeadersServiceResult {
   headers: Record<string, string>;
@@ -40,6 +41,27 @@ export async function getHttpHeaders(targetUrl: string): Promise<HeadersServiceR
       });
       riskScore += 50;
       break;
+    }
+
+    // Validación Post-DNS contra DNS Rebinding antes de emitir la petición
+    try {
+      const parsedHost = new URL(currentUrl).hostname;
+      if (!isPrivateIp(parsedHost)) {
+        const resolvedIps = await dns.resolve(parsedHost).catch(() => []);
+        if (resolvedIps.some(ip => isPrivateIp(ip))) {
+          findings.push({
+            id: `redirect-ssrf-rebinding-${hops}`,
+            severity: "critical",
+            title: "DNS Rebinding / SSRF bloqueado",
+            description: `El dominio '${parsedHost}' resuelve a una dirección IP interna o privada no autorizada (${resolvedIps.join(", ")}).`,
+            evidence: `Salto #${hops}: ${currentUrl}`,
+          });
+          riskScore += 50;
+          break;
+        }
+      }
+    } catch {
+      // Ignorar fallos de parseo aquí
     }
 
     try {

@@ -233,10 +233,10 @@ export default function Home() {
               <ThreatReport result={selected} onNewScan={handleNewScan} />
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:sticky lg:top-[76px] flex flex-col gap-5">
-              {/* Escaneo rápido */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+            {/* Sidebar — sticky en desktop, apilado en móvil */}
+            <div className="lg:sticky lg:top-[76px] flex flex-col gap-4">
+              {/* Escaneo rápido — oculto en móvil (el botón "Nuevo análisis" del reporte lo cubre) */}
+              <div className="hidden lg:block rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
                 <div className="text-[10px] font-bold tracking-widest text-zinc-500 mb-3">ESCANEO RÁPIDO</div>
                 <ScannerInput onAnalyze={startScan} loading={false} />
               </div>

@@ -13,6 +13,7 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: #3f3f46 transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -23,8 +24,98 @@ body {
   background: #09090b;
   color: #fafafa;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  /* Evita zoom en inputs en iOS */
+  -webkit-text-size-adjust: 100%;
 }
 
 code, pre, .font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ── Animaciones de entrada ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-up {
+  animation: fadeUp 0.35s ease-out both;
+}
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+/* Delay helpers */
+.delay-100 { animation-delay: 0.10s; }
+.delay-150 { animation-delay: 0.15s; }
+.delay-200 { animation-delay: 0.20s; }
+.delay-300 { animation-delay: 0.30s; }
+
+/* Oculta scrollbar en tabs horizontales sin perder funcionalidad */
+.overflow-x-auto {
+  scrollbar-width: none;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Estilos de impresión ── */
+@media print {
+  /* Fondo negro → blanco */
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Ocultar elementos de navegación */
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Forzar colores legibles */
+  .text-zinc-400,
+  .text-zinc-500,
+  .text-zinc-600 {
+    color: #374151 !important;
+  }
+  .text-white,
+  .text-zinc-100,
+  .text-zinc-200,
+  .text-zinc-300 {
+    color: #111827 !important;
+  }
+
+  /* Bordes visibles en papel */
+  [class*="border-zinc"] {
+    border-color: #d1d5db !important;
+  }
+
+  /* Fondos oscuros → muy claro */
+  [class*="bg-zinc-9"],
+  [class*="bg-zinc-8"],
+  [class*="bg-zinc-950"] {
+    background: #f9fafb !important;
+  }
+
+  /* Sin sombras ni blur */
+  [class*="backdrop-blur"],
+  [class*="shadow"] {
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Sin saltos de página dentro de cards */
+  .rounded-2xl,
+  .rounded-xl {
+    break-inside: avoid;
+  }
+
+  /* Gauge SVG legible */
+  svg circle[stroke*="rgba"] {
+    stroke: #e5e7eb !important;
+  }
 }

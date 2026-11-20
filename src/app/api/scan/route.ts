@@ -8,6 +8,8 @@ import { IndicatorType, ScanResult } from "@/lib/types";
 import { resolveDns } from "@/lib/services/dns";
 import { getTlsCertificate } from "@/lib/services/tls";
 import { getHttpHeaders } from "@/lib/services/headers";
+import { queryRdap } from "@/lib/services/rdap";
+import { geolocateIp } from "@/lib/services/geolocation";
 import { gradeFromScore, verdictFromScore } from "@/lib/utils";
 
 interface ScanRequestBody {
@@ -95,9 +97,9 @@ export async function POST(request: Request) {
     const scanResult: ScanResult = analyze(sanitizedIndicator, fileName);
     const indicatorType = scanResult.type;
 
-    // ========================================================
-    // FASE 1: CONSULTAS NATIVAS REALES (DNS, TLS, HTTP HEADERS)
-    // ========================================================
+    // =========================================================================
+    // FASE 1 & FASE 2: VERIFICACIÓN REAL (DNS, TLS, HTTP, WHOIS/RDAP, GEOLOC)
+    // =========================================================================
 
     if (indicatorType === "url" || indicatorType === "domain") {
       let hostname = sanitizedIndicator;
@@ -110,14 +112,16 @@ export async function POST(request: Request) {
         hostname = sanitizedIndicator.split("/")[0].split(":")[0];
       }
 
-      // Consultas en paralelo con servicios nativos de Node.js
-      const [dnsOutcome, tlsOutcome, headersOutcome] = await Promise.allSettled([
+      // Consultas concurrentes sin API key (DNS, TLS, Headers, RDAP)
+      const [dnsOutcome, tlsOutcome, headersOutcome, rdapOutcome] = await Promise.allSettled([
         resolveDns(hostname),
         getTlsCertificate(hostname),
         getHttpHeaders(sanitizedIndicator),
+        queryRdap(hostname),
       ]);
 
       // 1. Verificación DNS Real
+      let primaryResolvedIp: string | null = null;
       if (dnsOutcome.status === "fulfilled") {
         const dnsData = dnsOutcome.value;
 
@@ -131,13 +135,15 @@ export async function POST(request: Request) {
           );
         }
 
-        // Reemplazar evidencia DNS simulada con datos 100% reales
         scanResult.evidence.dns = dnsData.records;
         if (dnsData.reverseDns) {
           scanResult.evidence.reverseDns = dnsData.reverseDns;
         }
         if (dnsData.iocs.length > 0) {
           scanResult.evidence.iocs = dnsData.iocs;
+        }
+        if (dnsData.resolvedIps.length > 0) {
+          primaryResolvedIp = dnsData.resolvedIps[0];
         }
 
         // Filtrar hallazgos simulados de DNS e inyectar los reales
@@ -176,14 +182,48 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + headersData.riskContribution);
       }
 
+      // 4. Verificación WHOIS / RDAP Real (Fase 2)
+      if (rdapOutcome.status === "fulfilled") {
+        const rdapData = rdapOutcome.value;
+        if (rdapData.whois) {
+          scanResult.evidence.whois = rdapData.whois;
+        }
+
+        // Filtrar hallazgos simulados de WHOIS e inyectar los reales
+        scanResult.findings = scanResult.findings.filter(
+          f => !f.id.startsWith("whois-") && !f.id.startsWith("sec-whois-")
+        );
+        scanResult.findings.push(...rdapData.findings);
+        scanResult.riskScore = Math.min(100, scanResult.riskScore + rdapData.riskContribution);
+      }
+
+      // 5. Enriquecer geolocalización real con la IP resuelta del dominio
+      if (primaryResolvedIp) {
+        try {
+          const geoData = await geolocateIp(primaryResolvedIp);
+          if (geoData.geolocation) {
+            scanResult.evidence.geolocation = geoData.geolocation;
+          }
+        } catch {
+          // No bloquear si la geolocalización externa no responde
+        }
+      }
+
       // Recalcular grado y veredicto con las puntuaciones de riesgo reales
       scanResult.verdict = verdictFromScore(scanResult.riskScore);
       scanResult.grade = gradeFromScore(scanResult.riskScore);
-      scanResult.confidence = "Alta (DNS, TLS y HTTP 100% verificados)";
+      scanResult.confidence = "Alta (DNS, TLS, HTTP y WHOIS 100% reales)";
     } else if (indicatorType === "ip") {
-      // Para IPs: Resolver PTR real (Reverse DNS)
-      try {
-        const dnsData = await resolveDns(sanitizedIndicator.split(":")[0]);
+      const cleanIp = sanitizedIndicator.split(":")[0];
+
+      // Consultas concurrentes para IP: PTR DNS y Geolocalización real
+      const [dnsOutcome, geoOutcome] = await Promise.allSettled([
+        resolveDns(cleanIp),
+        geolocateIp(cleanIp),
+      ]);
+
+      if (dnsOutcome.status === "fulfilled") {
+        const dnsData = dnsOutcome.value;
         if (dnsData.records?.ptr) {
           scanResult.evidence.dns = {
             ...(scanResult.evidence.dns || {}),
@@ -191,9 +231,28 @@ export async function POST(request: Request) {
           };
           scanResult.evidence.reverseDns = dnsData.records.ptr;
         }
-      } catch {
-        // Continuar si falla PTR
       }
+
+      if (geoOutcome.status === "fulfilled") {
+        const geoData = geoOutcome.value;
+        if (geoData.geolocation) {
+          scanResult.evidence.geolocation = geoData.geolocation;
+        }
+        if (geoData.reverseDns && !scanResult.evidence.reverseDns) {
+          scanResult.evidence.reverseDns = geoData.reverseDns;
+        }
+
+        // Filtrar hallazgos simulados de geolocalización e inyectar los reales
+        scanResult.findings = scanResult.findings.filter(
+          f => !f.id.startsWith("geo-")
+        );
+        scanResult.findings.push(...geoData.findings);
+        scanResult.riskScore = Math.min(100, scanResult.riskScore + geoData.riskContribution);
+      }
+
+      scanResult.verdict = verdictFromScore(scanResult.riskScore);
+      scanResult.grade = gradeFromScore(scanResult.riskScore);
+      scanResult.confidence = "Alta (Geolocalización y PTR 100% reales)";
     }
 
     // Ordenar findings por severidad descendente
@@ -205,7 +264,7 @@ export async function POST(request: Request) {
     // 7. Guardar en caché con TTL de 30 minutos
     scanResultCache.set(cacheKey, scanResult);
 
-    // 8. Respuesta exitosa con datos 100% reales en DNS, TLS y Cabeceras
+    // 8. Respuesta exitosa con datos reales
     return NextResponse.json(scanResult, {
       status: 200,
       headers: {

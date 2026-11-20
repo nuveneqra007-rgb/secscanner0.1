@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "split-analyzer": {
+      "description": "Divide analyzer.ts en módulos por tipo de indicador (tarea de una sola vez)",
+      "agent": "plan",
+      "template": "src/lib/analyzer.ts es muy grande. Propón cómo dividirlo en src/lib/analyzer/url.ts, ip.ts, file.ts y index.ts sin cambiar el comportamiento ni el contrato ScanResult. Da el plan por pasos pequeños, cada uno verificable con npm run build. No modifiques nada todavía."
+    },
+    "real-data": {
+      "description": "Plan para reemplazar un módulo simulado por una fuente real",
+      "agent": "plan",
+      "template": "Quiero reemplazar el módulo simulado de: $ARGUMENTS por datos reales.\n\nPropón: (1) opciones de fuente con plan gratuito, indicando que debo verificar sus límites actuales, (2) dónde va la llamada (servidor, nunca cliente), (3) protecciones necesarias (SSRF, timeout, rate limit, caché), (4) cómo marcar en la UI qué dato es real y cuál sigue simulado. No modifiques nada."
+    },
+    "docs-sync": {
+      "description": "Sincroniza el README con lo que el código hace de verdad",
+      "agent": "docs",
+      "subtask": true,
+      "template": "Compara README.md con el código actual en src/ y corrige el README para que sea exacto, marcando como simulado lo que lo esté."
+    }
+  }
+}

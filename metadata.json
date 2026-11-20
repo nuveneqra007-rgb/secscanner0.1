@@ -1,0 +1,6 @@
+{
+  "name": "ThreatScan",
+  "description": "Threat Intelligence Lab for analyzing URLs, IPs, hashes, and APKs with heuristic detection and SOC-ready reporting.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

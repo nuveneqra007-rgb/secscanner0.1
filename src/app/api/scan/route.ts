@@ -15,12 +15,15 @@ import { checkAbuseIpDb } from "@/lib/services/abuseipdb";
 import { queryVirusTotal } from "@/lib/services/virustotal";
 import { checkPhishingBlacklists } from "@/lib/services/phishing";
 import { checkAbuseCh } from "@/lib/services/abusech";
+import { runHeuristics } from "@/lib/services/heuristic";
+import { analyzeBuffer } from "@/lib/services/file-static";
 import { gradeFromScore, verdictFromScore } from "@/lib/utils";
 
 interface ScanRequestBody {
   indicator: string;
   type?: IndicatorType;
   fileName?: string;
+  fileBase64?: string;
 }
 
 export async function POST(request: Request) {
@@ -88,7 +91,7 @@ export async function POST(request: Request) {
     const cacheKey = generateCacheKey(sanitizedIndicator, body.type, fileName);
     const cachedResult = scanResultCache.get(cacheKey);
 
-    if (cachedResult) {
+    if (cachedResult && !body.fileBase64) {
       return NextResponse.json(cachedResult, {
         status: 200,
         headers: {
@@ -100,13 +103,72 @@ export async function POST(request: Request) {
 
     // 6. Base analítica del indicador
     const scanResult: ScanResult = analyze(sanitizedIndicator, fileName);
-    const indicatorType = scanResult.type;
+    const indicatorType = fileName
+      ? fileName.toLowerCase().endsWith(".apk")
+        ? "apk"
+        : "file"
+      : scanResult.type;
+
+    scanResult.type = indicatorType;
 
     // =========================================================================
-    // FASES 1, 2, 3 Y 4: VERIFICACIÓN REAL Y THREAT INTELLIGENCE
+    // RAMA A: ARCHIVO / APK SUBIDO (ANÁLISIS ESTÁTICO BINARIO REAL)
     // =========================================================================
+    if ((indicatorType === "file" || indicatorType === "apk") && body.fileBase64) {
+      const buffer = Buffer.from(body.fileBase64, "base64");
 
-    if (indicatorType === "url" || indicatorType === "domain") {
+      // Límite de seguridad: máximo 20 MB
+      if (buffer.length > 20 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: "El archivo supera el tamaño máximo permitido de 20 MB." },
+          { status: 400, headers: rateHeaders }
+        );
+      }
+
+      // Análisis estático del buffer (Hashes criptográficos, Entropía Shannon, Magic Bytes, Permisos Android)
+      const staticResult = analyzeBuffer(buffer, fileName || sanitizedIndicator);
+      scanResult.evidence.fileInfo = staticResult.fileInfo;
+      scanResult.evidence.permissions = staticResult.permissions;
+
+      // Filtrar hallazgos simulados de archivos
+      scanResult.findings = scanResult.findings.filter(
+        f => !f.id.startsWith("file-") && !f.id.startsWith("apk-") && !f.id.startsWith("perm-")
+      );
+      scanResult.findings.push(...staticResult.findings);
+      scanResult.riskScore = Math.min(100, staticResult.riskContribution);
+
+      // Consulta pasiva del hash SHA-256 en VirusTotal y MalwareBazaar (Zero Upload)
+      const sha256 = staticResult.fileInfo?.sha256;
+      if (sha256) {
+        const [vtOutcome, abuseChOutcome] = await Promise.allSettled([
+          queryVirusTotal(sha256, "hash"),
+          checkAbuseCh(sha256, "hash"),
+        ]);
+
+        if (vtOutcome.status === "fulfilled") {
+          const vtData = vtOutcome.value;
+          if (vtData.detections) {
+            scanResult.evidence.vtDetections = vtData.detections;
+          }
+          scanResult.findings.push(...vtData.findings);
+          scanResult.riskScore = Math.min(100, scanResult.riskScore + vtData.riskContribution);
+        }
+
+        if (abuseChOutcome.status === "fulfilled" && abuseChOutcome.value.found) {
+          scanResult.findings.push(...abuseChOutcome.value.findings);
+          scanResult.riskScore = Math.min(100, scanResult.riskScore + abuseChOutcome.value.riskContribution);
+        }
+      }
+
+      scanResult.verdict = verdictFromScore(scanResult.riskScore);
+      scanResult.grade = gradeFromScore(scanResult.riskScore);
+      scanResult.confidence = "Alta (Análisis estático binario y hash VT 100% reales)";
+    }
+
+    // =========================================================================
+    // RAMA B: URL O DOMINIO (CONSULTAS NATIVAS + HEURÍSTICA + THREAT INTEL)
+    // =========================================================================
+    else if (indicatorType === "url" || indicatorType === "domain") {
       let hostname = sanitizedIndicator;
       try {
         const fullUrl = /^https?:\/\//i.test(sanitizedIndicator)
@@ -117,7 +179,7 @@ export async function POST(request: Request) {
         hostname = sanitizedIndicator.split("/")[0].split(":")[0];
       }
 
-      // Consultas concurrentes de Fases 1 a 4
+      // Ejecución paralela de las 7 capas de verificación
       const [
         dnsOutcome,
         tlsOutcome,
@@ -136,12 +198,17 @@ export async function POST(request: Request) {
         checkAbuseCh(sanitizedIndicator, indicatorType === "domain" ? "domain" : "url"),
       ]);
 
-      // 1. Verificación DNS Real
+      // Heurística local avanzada (Levenshtein 80+ marcas, Homoglyphs, DGA, Base64)
+      const heurData = runHeuristics(sanitizedIndicator);
+      scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("heur-"));
+      scanResult.findings.push(...heurData.findings);
+      scanResult.riskScore = Math.min(100, heurData.score);
+
+      // 1. DNS Real
       let primaryResolvedIp: string | null = null;
       if (dnsOutcome.status === "fulfilled") {
         const dnsData = dnsOutcome.value;
 
-        // Post-DNS SSRF check (DNS Rebinding)
         if (dnsData.isRebindingAttack) {
           return NextResponse.json(
             {
@@ -152,15 +219,9 @@ export async function POST(request: Request) {
         }
 
         scanResult.evidence.dns = dnsData.records;
-        if (dnsData.reverseDns) {
-          scanResult.evidence.reverseDns = dnsData.reverseDns;
-        }
-        if (dnsData.iocs.length > 0) {
-          scanResult.evidence.iocs = dnsData.iocs;
-        }
-        if (dnsData.resolvedIps.length > 0) {
-          primaryResolvedIp = dnsData.resolvedIps[0];
-        }
+        if (dnsData.reverseDns) scanResult.evidence.reverseDns = dnsData.reverseDns;
+        if (dnsData.iocs.length > 0) scanResult.evidence.iocs = dnsData.iocs;
+        if (dnsData.resolvedIps.length > 0) primaryResolvedIp = dnsData.resolvedIps[0];
 
         scanResult.findings = scanResult.findings.filter(
           f => !f.id.startsWith("dns-") && !f.id.startsWith("sec-dns-")
@@ -168,12 +229,10 @@ export async function POST(request: Request) {
         scanResult.findings.push(...dnsData.findings);
       }
 
-      // 2. Verificación TLS/SSL Real
+      // 2. TLS/SSL Real
       if (tlsOutcome.status === "fulfilled") {
         const tlsData = tlsOutcome.value;
-        if (tlsData.ssl) {
-          scanResult.evidence.ssl = tlsData.ssl;
-        }
+        if (tlsData.ssl) scanResult.evidence.ssl = tlsData.ssl;
 
         scanResult.findings = scanResult.findings.filter(
           f => !f.id.startsWith("ssl-") && !f.id.startsWith("sec-ssl-")
@@ -182,7 +241,7 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + tlsData.riskContribution);
       }
 
-      // 3. Verificación de Cabeceras HTTP Real
+      // 3. Cabeceras HTTP Real
       if (headersOutcome.status === "fulfilled") {
         const headersData = headersOutcome.value;
         scanResult.evidence.httpHeaders = headersData.headers;
@@ -195,12 +254,10 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + headersData.riskContribution);
       }
 
-      // 4. Verificación WHOIS / RDAP Real
+      // 4. WHOIS / RDAP Real
       if (rdapOutcome.status === "fulfilled") {
         const rdapData = rdapOutcome.value;
-        if (rdapData.whois) {
-          scanResult.evidence.whois = rdapData.whois;
-        }
+        if (rdapData.whois) scanResult.evidence.whois = rdapData.whois;
 
         scanResult.findings = scanResult.findings.filter(
           f => !f.id.startsWith("whois-") && !f.id.startsWith("sec-whois-")
@@ -209,21 +266,17 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + rdapData.riskContribution);
       }
 
-      // 5. Verificación VirusTotal v3 Real
+      // 5. VirusTotal v3 Real
       if (vtOutcome.status === "fulfilled") {
         const vtData = vtOutcome.value;
-        if (vtData.detections) {
-          scanResult.evidence.vtDetections = vtData.detections;
-        }
+        if (vtData.detections) scanResult.evidence.vtDetections = vtData.detections;
 
-        scanResult.findings = scanResult.findings.filter(
-          f => !f.id.startsWith("vt-")
-        );
+        scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("vt-"));
         scanResult.findings.push(...vtData.findings);
         scanResult.riskScore = Math.min(100, scanResult.riskScore + vtData.riskContribution);
       }
 
-      // 6. Verificación PhishTank y Google Safe Browsing (Fase 4)
+      // 6. Phishing Blacklists Real
       if (phishOutcome.status === "fulfilled") {
         const phishData = phishOutcome.value;
         if (phishData.blacklists.length > 0) {
@@ -249,7 +302,7 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + phishData.riskContribution);
       }
 
-      // 7. Verificación abuse.ch (URLhaus / ThreatFox) (Fase 4)
+      // 7. abuse.ch Real
       if (abuseChOutcome.status === "fulfilled" && abuseChOutcome.value.found) {
         const abuseChData = abuseChOutcome.value;
         scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("abusech-"));
@@ -257,7 +310,7 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + abuseChData.riskContribution);
       }
 
-      // 8. Enriquecer geolocalización y puertos del servidor de hosting
+      // 8. Enriquecer geolocalización y puertos del servidor web
       if (primaryResolvedIp) {
         try {
           const [geoData, shodanData] = await Promise.all([
@@ -265,12 +318,8 @@ export async function POST(request: Request) {
             queryShodanInternetDb(primaryResolvedIp),
           ]);
 
-          if (geoData.geolocation) {
-            scanResult.evidence.geolocation = geoData.geolocation;
-          }
-          if (shodanData.ports && shodanData.ports.length > 0) {
-            scanResult.evidence.ports = shodanData.ports;
-          }
+          if (geoData.geolocation) scanResult.evidence.geolocation = geoData.geolocation;
+          if (shodanData.ports && shodanData.ports.length > 0) scanResult.evidence.ports = shodanData.ports;
         } catch {
           // Continuar sin bloquear
         }
@@ -278,11 +327,15 @@ export async function POST(request: Request) {
 
       scanResult.verdict = verdictFromScore(scanResult.riskScore);
       scanResult.grade = gradeFromScore(scanResult.riskScore);
-      scanResult.confidence = "Alta (DNS, TLS, HTTP, WHOIS, VT y Phishing verificados)";
-    } else if (indicatorType === "ip") {
+      scanResult.confidence = "Alta (Heurística, DNS, TLS, HTTP, WHOIS, VT y Phishing 100% reales)";
+    }
+
+    // =========================================================================
+    // RAMA C: DIRECCIÓN IP (INFRAESTRUCTURA Y REPUTACIÓN)
+    // =========================================================================
+    else if (indicatorType === "ip") {
       const cleanIp = sanitizedIndicator.split(":")[0];
 
-      // Consultas concurrentes para IP (Fases 1 a 4)
       const [dnsOutcome, geoOutcome, shodanOutcome, abuseOutcome, vtOutcome, abuseChOutcome] =
         await Promise.allSettled([
           resolveDns(cleanIp),
@@ -293,34 +346,24 @@ export async function POST(request: Request) {
           checkAbuseCh(cleanIp, "ip"),
         ]);
 
-      // 1. DNS PTR
       if (dnsOutcome.status === "fulfilled") {
         const dnsData = dnsOutcome.value;
         if (dnsData.records?.ptr) {
-          scanResult.evidence.dns = {
-            ...(scanResult.evidence.dns || {}),
-            ptr: dnsData.records.ptr,
-          };
+          scanResult.evidence.dns = { ...(scanResult.evidence.dns || {}), ptr: dnsData.records.ptr };
           scanResult.evidence.reverseDns = dnsData.records.ptr;
         }
       }
 
-      // 2. Geolocalización Real
       if (geoOutcome.status === "fulfilled") {
         const geoData = geoOutcome.value;
-        if (geoData.geolocation) {
-          scanResult.evidence.geolocation = geoData.geolocation;
-        }
-        if (geoData.reverseDns && !scanResult.evidence.reverseDns) {
-          scanResult.evidence.reverseDns = geoData.reverseDns;
-        }
+        if (geoData.geolocation) scanResult.evidence.geolocation = geoData.geolocation;
+        if (geoData.reverseDns && !scanResult.evidence.reverseDns) scanResult.evidence.reverseDns = geoData.reverseDns;
 
         scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("geo-"));
         scanResult.findings.push(...geoData.findings);
         scanResult.riskScore = Math.min(100, scanResult.riskScore + geoData.riskContribution);
       }
 
-      // 3. Shodan InternetDB Real (Puertos y CVEs)
       if (shodanOutcome.status === "fulfilled") {
         const shodanData = shodanOutcome.value;
         scanResult.evidence.ports = shodanData.ports;
@@ -330,21 +373,15 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + shodanData.riskContribution);
       }
 
-      // 4. AbuseIPDB Real (Reputación y Denuncias)
       if (abuseOutcome.status === "fulfilled") {
         const abuseData = abuseOutcome.value;
-        if (abuseData.reputation) {
-          scanResult.evidence.reputation = abuseData.reputation;
-        }
+        if (abuseData.reputation) scanResult.evidence.reputation = abuseData.reputation;
 
-        scanResult.findings = scanResult.findings.filter(
-          f => !f.id.startsWith("abuseipdb-") && !f.id.startsWith("rep-")
-        );
+        scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("abuseipdb-") && !f.id.startsWith("rep-"));
         scanResult.findings.push(...abuseData.findings);
         scanResult.riskScore = Math.min(100, scanResult.riskScore + abuseData.riskContribution);
       }
 
-      // 5. VirusTotal IP Real
       if (vtOutcome.status === "fulfilled") {
         const vtData = vtOutcome.value;
         if (vtData.detections) {
@@ -359,7 +396,6 @@ export async function POST(request: Request) {
         scanResult.riskScore = Math.min(100, scanResult.riskScore + vtData.riskContribution);
       }
 
-      // 6. ThreatFox IOC Check para IP (Fase 4)
       if (abuseChOutcome.status === "fulfilled" && abuseChOutcome.value.found) {
         const abuseChData = abuseChOutcome.value;
         scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("abusech-"));
@@ -370,8 +406,12 @@ export async function POST(request: Request) {
       scanResult.verdict = verdictFromScore(scanResult.riskScore);
       scanResult.grade = gradeFromScore(scanResult.riskScore);
       scanResult.confidence = "Alta (Shodan, AbuseIPDB, VirusTotal y ThreatFox)";
-    } else if (indicatorType === "hash") {
-      // Consultas concurrentes para Hash (VirusTotal v3 + MalwareBazaar + ThreatFox)
+    }
+
+    // =========================================================================
+    // RAMA D: HASH PURO (VIRUSTOTAL + MALWAREBAZAAR + THREATFOX)
+    // =========================================================================
+    else if (indicatorType === "hash") {
       const [vtOutcome, abuseChOutcome] = await Promise.allSettled([
         queryVirusTotal(sanitizedIndicator, "hash"),
         checkAbuseCh(sanitizedIndicator, "hash"),
@@ -379,9 +419,7 @@ export async function POST(request: Request) {
 
       if (vtOutcome.status === "fulfilled") {
         const vtData = vtOutcome.value;
-        if (vtData.detections) {
-          scanResult.evidence.vtDetections = vtData.detections;
-        }
+        if (vtData.detections) scanResult.evidence.vtDetections = vtData.detections;
 
         scanResult.findings = scanResult.findings.filter(f => !f.id.startsWith("vt-"));
         scanResult.findings.push(...vtData.findings);
@@ -397,7 +435,7 @@ export async function POST(request: Request) {
 
       scanResult.verdict = verdictFromScore(scanResult.riskScore);
       scanResult.grade = gradeFromScore(scanResult.riskScore);
-      scanResult.confidence = "Alta (VirusTotal v3 y MalwareBazaar verificados)";
+      scanResult.confidence = "Alta (VirusTotal v3 y MalwareBazaar 100% reales)";
     }
 
     // Ordenar findings por severidad descendente

@@ -70,7 +70,7 @@ export default function Home() {
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [selected, setSelected] = useState<ScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [pendingInput, setPendingInput] = useState<{ input: string; fileName?: string } | null>(null);
+  const [pendingInput, setPendingInput] = useState<{ input: string; fileName?: string; fileBase64?: string } | null>(null);
   const [showInput, setShowInput] = useState(true);
   const [scanError, setScanError] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
@@ -88,9 +88,9 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  const startScan = (input: string, fileName?: string) => {
+  const startScan = (input: string, fileName?: string, fileBase64?: string) => {
     if (!input.trim()) return;
-    setPendingInput({ input, fileName });
+    setPendingInput({ input, fileName, fileBase64 });
     setScanning(true);
     setShowInput(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -105,6 +105,7 @@ export default function Home() {
         body: JSON.stringify({
           indicator: pendingInput.input,
           fileName: pendingInput.fileName,
+          fileBase64: pendingInput.fileBase64,
         }),
       });
 

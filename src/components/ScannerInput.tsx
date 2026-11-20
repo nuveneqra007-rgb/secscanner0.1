@@ -45,12 +45,13 @@ export function ScannerInput({
   onAnalyze,
   loading,
 }: {
-  onAnalyze: (input: string, fileName?: string) => void;
+  onAnalyze: (input: string, fileName?: string, fileBase64?: string) => void;
   loading: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("archivo");
   const [value, setValue] = useState("");
   const [fileName, setFileName] = useState<string | undefined>();
+  const [fileBase64, setFileBase64] = useState<string | undefined>();
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -60,18 +61,26 @@ export function ScannerInput({
 
   const handleAnalyze = () => {
     if (!isValid) return;
-    onAnalyze(isFileTab ? (fileName ?? "") : value.trim(), fileName);
+    onAnalyze(isFileTab ? (fileName ?? "") : value.trim(), fileName, fileBase64);
   };
 
   const handleFile = (f: File) => {
     setFileName(f.name);
     setValue(f.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const b64 = result.split(",")[1];
+      setFileBase64(b64);
+    };
+    reader.readAsDataURL(f);
   };
 
   const handleTabChange = (t: Tab) => {
     setTab(t);
     setValue("");
     setFileName(undefined);
+    setFileBase64(undefined);
   };
 
   return (

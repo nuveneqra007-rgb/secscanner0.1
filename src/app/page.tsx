@@ -6,7 +6,6 @@ import { ScannerInput } from "@/components/ScannerInput";
 import { ScanningProgress } from "@/components/ScanningProgress";
 import { ThreatReport } from "@/components/ThreatReport";
 import { HistoryPanel } from "@/components/HistoryPanel";
-import { analyze } from "@/lib/analyzer";
 import { ScanResult } from "@/lib/types";
 import { addScan, clearHistory, loadHistory } from "@/lib/storage";
 import { detectIndicatorType } from "@/lib/utils";
@@ -97,23 +96,35 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const completeScan = () => {
+  const completeScan = async () => {
     if (!pendingInput) return;
-    setTimeout(() => {
-      try {
-        const result = analyze(pendingInput.input, pendingInput.fileName);
-        const nextHist = addScan(result);
-        setHistory(nextHist);
-        setSelected(result);
-        setScanning(false);
-        setPendingInput(null);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Error desconocido";
-        setScanError(msg);
-        setScanning(false);
-        setPendingInput(null);
+    try {
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          indicator: pendingInput.input,
+          fileName: pendingInput.fileName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || `Error en el análisis (${response.status})`);
       }
-    }, 0);
+
+      const result: ScanResult = await response.json();
+      const nextHist = addScan(result);
+      setHistory(nextHist);
+      setSelected(result);
+      setScanning(false);
+      setPendingInput(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setScanError(msg);
+      setScanning(false);
+      setPendingInput(null);
+    }
   };
 
   const handleSelect = (r: ScanResult) => {

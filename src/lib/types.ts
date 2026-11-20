@@ -80,6 +80,8 @@ export interface TechnicalEvidence {
   vtDetections?: { engine: string; result: string }[];
 }
 
+export type SourceStatus = "live" | "simulated" | "unavailable";
+
 export interface ScanResult {
   id: string;
   timestamp: string;
@@ -95,6 +97,9 @@ export interface ScanResult {
   evidence: TechnicalEvidence;
   recommendations: string[];
   scanDurationMs: number;
+  isLive?: boolean;
+  dataSource?: "live" | "simulated";
+  sources?: Record<string, SourceStatus>;
 }
 
 export interface ScanStep {

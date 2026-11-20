@@ -831,6 +831,21 @@ export function analyze(input: string, fileName?: string): ScanResult {
     evidence,
     recommendations,
     scanDurationMs: Date.now()-start + Math.floor(rnd()*400)+ 600, // simulated
+    isLive: false,
+    dataSource: "simulated",
+    sources: {
+      dns: "simulated",
+      tls: "simulated",
+      headers: "simulated",
+      rdap: "simulated",
+      geo: "simulated",
+      shodan: "simulated",
+      abuseipdb: "simulated",
+      virustotal: "simulated",
+      threatintel: "simulated",
+      heuristics: "simulated",
+      static: "simulated",
+    },
   };
 }
 
@@ -871,6 +886,11 @@ export function getSeedScans(): ScanResult[] {
     results[2].verdict = "clean";
     results[2].grade = "A";
   }
+  results.forEach(r => {
+    r.id = r.id.startsWith("demo_") ? r.id : `demo_${r.id}`;
+    r.isLive = false;
+    r.dataSource = "simulated";
+  });
   // Sort newest first
   return results.sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }

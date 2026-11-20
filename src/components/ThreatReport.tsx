@@ -51,7 +51,7 @@ const SEVERITY_ICONS: Record<Severity, string> = {
 
 type EvidenceTab = "whois" | "dns" | "ssl" | "headers" | "redirects" | "geo" | "reputation" | "ports" | "file" | "iocs";
 
-// ── Badge de datos simulados ──────────────────────────────────────────────────
+// ── Badges de verificación y procedencia de datos ─────────────────────────────
 
 function SimulatedBadge() {
   return (
@@ -64,6 +64,64 @@ function SimulatedBadge() {
         <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
       Simulado
+    </span>
+  );
+}
+
+function VerificationBadge({ result }: { result: ScanResult }) {
+  const isLive = result.isLive || result.dataSource === "live";
+
+  if (!isLive) {
+    return <SimulatedBadge />;
+  }
+
+  return (
+    <span
+      title="Análisis ejecutado en vivo con verificación criptográfica, consultas DNS/TLS y feeds de ciberinteligencia en tiempo real."
+      className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 cursor-help shadow-sm shadow-emerald-950/50"
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      ✓ Verificado en Vivo
+    </span>
+  );
+}
+
+function SourceTabBadge({ result, tab }: { result: ScanResult; tab: EvidenceTab }) {
+  if (!result.isLive && result.dataSource !== "live") {
+    return <SimulatedBadge />;
+  }
+
+  const sources = result.sources || {};
+  let isLive = true;
+
+  if (tab === "whois") isLive = sources.rdap === "live";
+  else if (tab === "dns") isLive = sources.dns === "live";
+  else if (tab === "ssl") isLive = sources.tls === "live";
+  else if (tab === "headers" || tab === "redirects") isLive = sources.headers === "live";
+  else if (tab === "geo") isLive = sources.geo === "live";
+  else if (tab === "reputation") isLive = sources.virustotal === "live" || sources.abuseipdb === "live" || sources.threatintel === "live";
+  else if (tab === "ports") isLive = sources.shodan === "live";
+  else if (tab === "file") isLive = sources.static === "live";
+  else if (tab === "iocs") isLive = true;
+
+  if (isLive) {
+    return (
+      <span
+        title="Datos consultados y validados en tiempo real desde APIs y servicios autoritativos."
+        className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 cursor-help shadow-sm"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        ✓ En Vivo
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title="Servicio no disponible o sin registros para este indicador."
+      className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#737373] cursor-help"
+    >
+      ⚠ No disponible
     </span>
   );
 }
@@ -263,7 +321,7 @@ function EvidenceTabs({ result }: { result: ScanResult }) {
           ))}
         </div>
         <div className="ml-auto px-4 shrink-0">
-          <SimulatedBadge />
+          <SourceTabBadge result={result} tab={active} />
         </div>
       </div>
 
@@ -548,8 +606,29 @@ export function ThreatReport({
       ? "text-[#A3A3A3] border-[#A3A3A3]/30 bg-[#A3A3A3]/10"
       : "text-[#E0E0E0] border-[#E0E0E0]/30 bg-[#E0E0E0]/10";
 
+  const getExportData = () => ({
+    ...result,
+    _metadata: {
+      engine: "SecScanner 0.1 Threat Intelligence Engine",
+      dataSource: result.isLive ? "live_verified" : "simulated_heuristic",
+      exportedAt: new Date().toISOString(),
+      verifiedSources: result.sources || {},
+    },
+  });
+
   const copyJSON = () => {
-    navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+    navigator.clipboard.writeText(JSON.stringify(getExportData(), null, 2));
+  };
+
+  const downloadJSON = () => {
+    const data = getExportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `secscanner_${result.type}_${result.id.slice(0, 16)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const shareUrl = () => {
@@ -595,6 +674,7 @@ export function ThreatReport({
             <span className="text-xs font-mono text-[#A3A3A3]">
               Grado {result.grade} · {result.type.toUpperCase()} · Confianza {result.confidence}
             </span>
+            <VerificationBadge result={result} />
           </div>
           <p className="text-sm text-[#D4D4D4] leading-relaxed line-clamp-2">{result.summary}</p>
         </div>
@@ -627,6 +707,18 @@ export function ThreatReport({
             className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition"
           >
             Copiar JSON
+          </button>
+          <button
+            onClick={downloadJSON}
+            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5"
+            title="Descargar reporte forense estructurado en formato JSON"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Exportar JSON
           </button>
           <button
             onClick={shareUrl}
@@ -711,18 +803,18 @@ export function ThreatReport({
                 <div className="w-full space-y-1.5 text-[11px] font-mono">
                   <div className="flex justify-between text-[#666666]">
                     <span>Motor</span>
-                    <span className="text-white">Heurística v0.1</span>
+                    <span className="text-white">{result.isLive ? "ThreatIntel v1.0" : "Heurística v0.1"}</span>
                   </div>
                   <div className="flex justify-between text-[#666666]">
-                    <span>Reglas</span>
-                    <span className="text-white">240 YARA</span>
+                    <span>Fuentes</span>
+                    <span className="text-white">{result.isLive ? "APIs en Vivo" : "Simuladas"}</span>
                   </div>
                   <div className="flex justify-between text-[#666666]">
-                    <span>Feeds</span>
-                    <span className="text-white">MISP + OTX</span>
+                    <span>Verificación</span>
+                    <span className="text-white">{result.isLive ? "100% Real" : "Demo"}</span>
                   </div>
                   <div className="pt-2 border-t border-[#222222]">
-                    <SimulatedBadge />
+                    <VerificationBadge result={result} />
                   </div>
                 </div>
               </div>

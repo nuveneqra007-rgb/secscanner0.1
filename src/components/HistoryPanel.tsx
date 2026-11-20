@@ -256,11 +256,16 @@ export function HistoryPanel({
                       {vs.label}
                     </span>
                     <span className="text-[11px] font-mono text-[#666666]">{item.type.toUpperCase()}</span>
-                    {item.id.startsWith("demo_") && (
+                    {item.id.startsWith("demo_") ? (
                       <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border bg-white/10 text-white border-white/20">
                         DEMO
                       </span>
-                    )}
+                    ) : (item.isLive || item.dataSource === "live") ? (
+                      <span className="text-[10px] font-bold font-mono tracking-wider px-2 py-0.5 rounded-full border bg-emerald-950/70 text-emerald-400 border-emerald-500/40 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                        EN VIVO
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-sm text-white truncate font-mono">{item.normalizedInput}</div>
                   <div className="text-[11px] font-mono text-[#666666] mt-0.5">{formatDate(item.timestamp)}</div>

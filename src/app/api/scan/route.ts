@@ -63,8 +63,23 @@ function getAllowedOrigin(request: Request): string {
   const origin = request.headers.get("origin");
   if (!origin) return "*";
 
+  // 1. Same-Origin Check: si el Host de la petición coincide con el Host del Origin, es la misma app
+  const host = request.headers.get("host") || request.headers.get("x-forwarded-host");
+  if (host) {
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost.toLowerCase() === host.toLowerCase()) {
+        return origin;
+      }
+    } catch {
+      // URL de origen malformada
+    }
+  }
+
+  // 2. Lista de dominios de confianza explícitos
   const trusted = [
     "https://secscanner0-1.vercel.app",
+    "https://secscanner.dpdns.org",
     "http://localhost:3000",
     "http://localhost:3005",
   ];
@@ -72,9 +87,14 @@ function getAllowedOrigin(request: Request): string {
   if (process.env.VERCEL_URL) {
     trusted.push(`https://${process.env.VERCEL_URL}`);
   }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    trusted.push(process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ""));
+  }
 
+  const cleanOrigin = origin.replace(/\/$/, "");
   if (
     trusted.includes(origin) ||
+    trusted.includes(cleanOrigin) ||
     /^https:\/\/secscanner0-1(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)
   ) {
     return origin;

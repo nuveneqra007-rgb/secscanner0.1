@@ -412,9 +412,9 @@ export default function Home() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-[#1A1A1A] mt-12 bg-[#0A0A0A]">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-[#666666]">
-          <span>© 2025 SecScanner — Threat Intelligence Framework · Local-First</span>
+          <span>© 2025 SecScanner — Threat Intelligence Framework</span>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">LocalStorage · Sin tracking</span>
+            <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">Historial en navegador · Sin tracking</span>
             <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">MIT</span>
           </div>
         </div>

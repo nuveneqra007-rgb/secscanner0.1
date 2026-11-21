@@ -1,5 +1,6 @@
 import tls from "tls";
 import { Finding, TechnicalEvidence } from "../types";
+import { safeLookup } from "../server/ssrf-guard";
 
 export interface TlsServiceResult {
   ssl?: TechnicalEvidence["ssl"];
@@ -36,6 +37,7 @@ export async function getTlsCertificate(hostname: string, port = 443): Promise<T
         host: cleanHost,
         port,
         servername: cleanHost,
+        lookup: safeLookup,
         rejectUnauthorized: false, // Permitir capturar certificados autofirmados o caducados para auditoría
         timeout: 5000,
       },

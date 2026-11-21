@@ -307,7 +307,7 @@ export function HistoryPanel({
 
       {/* ── Footer ── */}
       <div className="px-4 py-2.5 bg-[#0A0A0A] border-t border-[#333333]/60 flex items-center justify-between text-[11px] font-mono text-[#666666]">
-        <span>LocalStorage · sin servidor</span>
+        <span>Historial guardado solo en este navegador</span>
         <span className="w-1.5 h-1.5 bg-[#E0E0E0] rounded-full animate-pulse" />
       </div>
     </div>

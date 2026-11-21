@@ -1,19 +1,36 @@
-import { isIP } from "net";
+import { BlockList, isIP } from "node:net";
+import dns from "node:dns";
 
-/**
- * Rangos de direcciones IP privadas, loopback, link-local y reservadas.
- */
-const BLOCKED_IP_REGEXES = [
-  /^127\./,                                    // Loopback IPv4 (127.0.0.0/8)
-  /^10\./,                                     // Red privada Clase A (10.0.0.0/8)
-  /^172\.(1[6-9]|2\d|3[01])\./,                // Red privada Clase B (172.16.0.0/12)
-  /^192\.168\./,                               // Red privada Clase C (192.168.0.0/16)
-  /^169\.254\./,                               // Link-local / APIPA (169.254.0.0/16)
-  /^0\./,                                      // Red origen actual (0.0.0.0/8)
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,  // Espacio compartido CGNAT (100.64.0.0/10)
-  /^198\.(18|19)\./,                           // Red de benchmark (198.18.0.0/15)
-  /^(::1|fc00:|fd00:|fe80:)/i,                 // IPv6 loopback, ULA, link-local
-];
+const bl = new BlockList();
+
+// Subredes IPv4 privadas, loopback, link-local, reservadas y multicast
+([
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+] as [string, number][]).forEach(([n, p]) => bl.addSubnet(n, p, "ipv4"));
+
+// Subredes IPv6 loopback, ULA, link-local, multicast, documentación y NAT64
+([
+  ["::", 128],
+  ["::1", 128],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
+  ["2001:db8::", 32],
+  ["64:ff9b::", 96],
+] as [string, number][]).forEach(([n, p]) => bl.addSubnet(n, p, "ipv6"));
 
 /**
  * Nombres de host bloqueados que corresponden a metadatos de nube o servicios internos.
@@ -114,9 +131,39 @@ export function canonicalizeIp(rawIp: string): string {
 /**
  * Verifica si una dirección IP pertenece a un rango privado, reservado o de loopback.
  */
+export function isBlockedIp(ip: string): boolean {
+  const c = canonicalizeIp(ip);
+  const fam = isIP(c);
+  if (fam === 4) return bl.check(c, "ipv4");
+  if (fam === 6) return bl.check(c, "ipv6");
+  return false;
+}
+
 export function isPrivateIp(ip: string): boolean {
-  const canonical = canonicalizeIp(ip);
-  return BLOCKED_IP_REGEXES.some(regex => regex.test(canonical));
+  return isBlockedIp(ip);
+}
+
+/**
+ * Lookup seguro: valida TODAS las IPs (A y AAAA) en el momento de conectar
+ */
+export function safeLookup(
+  hostname: string,
+  options: dns.LookupOptions,
+  cb: (err: NodeJS.ErrnoException | null, address: string | dns.LookupAddress[], family?: number) => void
+): void {
+  dns.lookup(hostname, { all: true, verbatim: true }, (err, addrs) => {
+    if (err) return cb(err, "", 4);
+    if (!addrs || addrs.length === 0) {
+      return cb(Object.assign(new Error("No se encontraron direcciones IP"), { code: "ENOTFOUND" }), "", 4);
+    }
+    if (addrs.some((a) => isBlockedIp(a.address))) {
+      return cb(Object.assign(new Error("SSRF: IP bloqueada por política de seguridad"), { code: "ESSRF" }), "", 4);
+    }
+    if (options?.all) {
+      return cb(null, addrs);
+    }
+    return cb(null, addrs[0].address, addrs[0].family);
+  });
 }
 
 /**
@@ -133,7 +180,7 @@ export function isSsrfTarget(target: string): boolean {
       hostname = parsed.hostname;
     } else {
       // Eliminar paths o puertos residuales (ej. 127.0.0.1:8080 o dominio.com/ruta)
-      hostname = hostname.split("/")[0].split(":")[0];
+      hostname = isIP(hostname) ? hostname : hostname.split("/")[0].split(":")[0];
     }
 
     hostname = hostname.toLowerCase().replace(/^\[|\]$/g, "");
@@ -164,12 +211,8 @@ export function isSsrfTarget(target: string): boolean {
       return true;
     }
 
-    // 4. Comprobar si es una dirección IP en un rango prohibido (canónica o directa)
-    if (isIP(hostname) || isIP(canonical) || isPrivateIp(canonical)) {
-      return isPrivateIp(canonical);
-    }
-
-    return false;
+    // 4. Comprobar si es una dirección IP en un rango prohibido
+    return isBlockedIp(canonical);
   } catch {
     // Si no se puede parsear limpiamente, bloquear por principio de mínimo privilegio
     return true;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { validateIndicator } from "@/lib/server/validator";
 import { isSsrfTarget } from "@/lib/server/ssrf-guard";
 import { checkRateLimit, getClientIp } from "@/lib/server/rate-limiter";
@@ -21,12 +22,20 @@ import { gradeFromScore, verdictFromScore, detectIndicatorType } from "@/lib/uti
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Permite hasta 30 segundos para resolver consultas en paralelo en Vercel Serverless
 
-interface ScanRequestBody {
-  indicator: string;
-  type?: IndicatorType;
-  fileName?: string;
-  fileBase64?: string;
-}
+const BodySchema = z
+  .object({
+    indicator: z.string().trim().min(1).max(2048),
+    type: z.enum(["url", "ip", "domain", "hash", "file", "apk"]).optional(),
+    fileName: z.string().trim().min(1).max(255).regex(/^[^\x00-\x1F\x7F/\\]+$/).optional(),
+    fileBase64: z.string().max(14_000_000).regex(/^[A-Za-z0-9+/]*={0,2}$/).optional(),
+  })
+  .strict()
+  .refine((b) => !b.fileName || !!b.fileBase64, { message: "fileName requiere fileBase64" })
+  .refine((b) => !["file", "apk"].includes(b.type ?? "") || !!b.fileBase64, {
+    message: "type file/apk requiere fileBase64",
+  });
+
+type ScanRequestBody = z.infer<typeof BodySchema>;
 
 function generateRecommendations(verdict: Verdict, findings: Finding[]): string[] {
   const recs: string[] = [];
@@ -61,7 +70,7 @@ function generateSummary(verdict: Verdict, type: IndicatorType): string {
 
 function getAllowedOrigin(request: Request): string {
   const origin = request.headers.get("origin");
-  if (!origin) return "*";
+  if (!origin) return "";
 
   // 1. Same-Origin Check: si el Host de la petición coincide con el Host del Origin, es la misma app
   const host = request.headers.get("host") || request.headers.get("x-forwarded-host");
@@ -94,8 +103,7 @@ function getAllowedOrigin(request: Request): string {
   const cleanOrigin = origin.replace(/\/$/, "");
   if (
     trusted.includes(origin) ||
-    trusted.includes(cleanOrigin) ||
-    /^https:\/\/secscanner0-1(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)
+    trusted.includes(cleanOrigin)
   ) {
     return origin;
   }
@@ -135,7 +143,7 @@ export async function POST(request: Request) {
   try {
     // 1. Control de Tasa (Rate Limiting)
     const clientIp = getClientIp(request.headers);
-    const rateCheck = checkRateLimit(clientIp);
+    const rateCheck = await checkRateLimit(clientIp);
 
     const rateHeaders: Record<string, string> = {
       "X-RateLimit-Limit": rateCheck.limit.toString(),
@@ -172,16 +180,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Parseo seguro del cuerpo JSON
-    let body: ScanRequestBody;
-    try {
-      body = await request.json();
-    } catch {
+    // 2. Parseo seguro del cuerpo JSON y límite de tamaño
+    const declaredLength = Number(request.headers.get("content-length") ?? "0");
+    if (declaredLength > 14 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Cuerpo de petición inválido. Se requiere un formato JSON válido." },
+        { error: "Payload demasiado grande. El límite máximo es de 14 MB." },
+        { status: 413, headers: rateHeaders }
+      );
+    }
+
+    const rawJson = await request.json().catch(() => null);
+    const parsed = BodySchema.safeParse(rawJson);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Cuerpo de petición inválido: " + parsed.error.issues.map((i) => i.message).join(", ") },
         { status: 400, headers: rateHeaders }
       );
     }
+    const body: ScanRequestBody = parsed.data;
 
     // 3. Validación y sanitización del indicador
     const validation = validateIndicator(body.indicator);
@@ -625,6 +641,15 @@ export async function POST(request: Request) {
       scanResult.confidence = "Alta (VirusTotal v3 y MalwareBazaar 100% reales)";
     }
 
+    // Prevenir veredicto fail-open: si todas las fuentes externas fallan en indicadores de red
+    const liveSources = Object.entries(sources).filter(([k, v]) => k !== "heuristics" && v === "live").length;
+    if (liveSources === 0 && !body.fileBase64 && indicatorType !== "hash") {
+      return NextResponse.json(
+        { error: "Fuentes de análisis no disponibles en este momento. Reintenta en unos minutos." },
+        { status: 503, headers: { ...rateHeaders, "Retry-After": "30" } }
+      );
+    }
+
     // 7. Cálculos de veredicto, grado y recomendaciones finales
     scanResult.riskScore = Math.min(100, Math.max(0, Math.round(scanResult.riskScore)));
     scanResult.verdict = verdictFromScore(scanResult.riskScore);
@@ -642,8 +667,10 @@ export async function POST(request: Request) {
       (a, b) => (severityWeights[a.severity] ?? 5) - (severityWeights[b.severity] ?? 5)
     );
 
-    // 8. Guardar en caché con TTL de 30 minutos
-    scanResultCache.set(cacheKey, scanResult);
+    // 8. Guardar en caché con TTL de 30 minutos (solo si no es un archivo único en base64)
+    if (!body.fileBase64) {
+      scanResultCache.set(cacheKey, scanResult);
+    }
 
     // 9. Logging estructurado para observabilidad en Vercel
     console.log(JSON.stringify({

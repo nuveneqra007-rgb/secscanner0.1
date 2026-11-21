@@ -1,6 +1,6 @@
-import dns from "node:dns/promises";
 import { Finding, TechnicalEvidence } from "../types";
-import { isPrivateIp, isSsrfTarget } from "../server/ssrf-guard";
+import { isSsrfTarget } from "../server/ssrf-guard";
+import { safeRequest } from "../server/safe-request";
 
 export interface HeadersServiceResult {
   headers: Record<string, string>;
@@ -10,7 +10,7 @@ export interface HeadersServiceResult {
 }
 
 /**
- * Consulta cabeceras HTTP reales y audita la cadena de redirecciones mediante peticiones nativas manuales.
+ * Consulta cabeceras HTTP reales y audita la cadena de redirecciones mediante peticiones nativas seguras.
  */
 export async function getHttpHeaders(targetUrl: string): Promise<HeadersServiceResult> {
   const findings: Finding[] = [];
@@ -25,7 +25,7 @@ export async function getHttpHeaders(targetUrl: string): Promise<HeadersServiceR
 
   const MAX_REDIRECTS = 5;
   let hops = 0;
-  let finalResponse: Response | null = null;
+  let finalHeaders: Record<string, string> | null = null;
 
   while (hops < MAX_REDIRECTS) {
     hops++;
@@ -43,62 +43,15 @@ export async function getHttpHeaders(targetUrl: string): Promise<HeadersServiceR
       break;
     }
 
-    // Validación Post-DNS contra DNS Rebinding antes de emitir la petición
     try {
-      const parsedHost = new URL(currentUrl).hostname;
-      if (!isPrivateIp(parsedHost)) {
-        const resolvedIps = await dns.resolve(parsedHost).catch(() => []);
-        if (resolvedIps.some(ip => isPrivateIp(ip))) {
-          findings.push({
-            id: `redirect-ssrf-rebinding-${hops}`,
-            severity: "critical",
-            title: "DNS Rebinding / SSRF bloqueado",
-            description: `El dominio '${parsedHost}' resuelve a una dirección IP interna o privada no autorizada (${resolvedIps.join(", ")}).`,
-            evidence: `Salto #${hops}: ${currentUrl}`,
-          });
-          riskScore += 50;
-          break;
-        }
-      }
-    } catch {
-      // Ignorar fallos de parseo aquí
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500);
-
-      // Intentar primero con HEAD para minimizar consumo de datos
-      let resp = await fetch(currentUrl, {
-        method: "HEAD",
-        redirect: "manual",
-        signal: controller.signal,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SecScanner/0.1 (Threat Analyzer)",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      // Si el servidor rechaza HEAD con 405 Method Not Allowed o 403, reintentar con GET
+      let resp = await safeRequest(currentUrl, "HEAD");
       if (resp.status === 405 || resp.status === 501) {
-        const getController = new AbortController();
-        const getTimeout = setTimeout(() => getController.abort(), 4500);
-        resp = await fetch(currentUrl, {
-          method: "GET",
-          redirect: "manual",
-          signal: getController.signal,
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SecScanner/0.1 (Threat Analyzer)",
-          },
-        });
-        clearTimeout(getTimeout);
+        resp = await safeRequest(currentUrl, "GET");
       }
 
-      finalResponse = resp;
+      finalHeaders = resp.headers;
       const isRedirect = [301, 302, 303, 307, 308].includes(resp.status);
-      const location = resp.headers.get("location");
+      const location = resp.headers["location"];
 
       redirectChain.push({
         url: currentUrl,
@@ -157,10 +110,8 @@ export async function getHttpHeaders(targetUrl: string): Promise<HeadersServiceR
   }
 
   // Analizar cabeceras de seguridad del último salto
-  if (finalResponse) {
-    finalResponse.headers.forEach((val, key) => {
-      headersRecord[key.toLowerCase()] = val;
-    });
+  if (finalHeaders) {
+    Object.assign(headersRecord, finalHeaders);
 
     const isHttps = currentUrl.startsWith("https://");
 

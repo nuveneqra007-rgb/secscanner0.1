@@ -315,12 +315,12 @@ export function ScannerInput({
           }}
         />
 
-        {/* Disclaimer inferior estilo VirusTotal (oculto en modo compacto de barra lateral) */}
+        {/* Disclaimer inferior con transparencia técnica (oculto en modo compacto de barra lateral) */}
         {!compact && (
           <div className="mt-6 pt-4 border-t border-[#222222] text-center">
             <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
-              Al analizar datos, el motor ejecuta heurística, entropía y correlación en un entorno local seguro.
-              <br className="hidden sm:inline" /> Tus consultas no se comparten ni persisten en bases de datos externas.
+              Los indicadores públicos se consultan en tiempo real contra servicios autorizados de ciberinteligencia (VirusTotal, abuse.ch, Shodan, RDAP).
+              <br className="hidden sm:inline" /> Los archivos se analizan en memoria en el servidor y no se almacenan. No subas archivos con datos confidenciales.
             </p>
           </div>
         )}

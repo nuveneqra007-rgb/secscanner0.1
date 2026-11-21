@@ -1,40 +1,54 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// Configuración Upstash Redis si las variables de entorno están presentes
+let redisInstance: Redis | null = null;
+let perIpLimiter: Ratelimit | null = null;
+let globalLimiter: Ratelimit | null = null;
+
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    redisInstance = Redis.fromEnv();
+    perIpLimiter = new Ratelimit({
+      redis: redisInstance,
+      limiter: Ratelimit.slidingWindow(Number(process.env.RATE_LIMIT_MAX) || 10, "1 m"),
+      prefix: "secscanner:ip",
+    });
+    globalLimiter = new Ratelimit({
+      redis: redisInstance,
+      limiter: Ratelimit.slidingWindow(200, "1 m"),
+      prefix: "secscanner:global",
+    });
+  } catch (err) {
+    console.warn("No se pudo inicializar Upstash Redis, utilizando rate limiting en memoria:", err);
+    redisInstance = null;
+  }
+}
+
+// Fallback in-memory rate limiting para entornos locales o despliegues sin Upstash configurado
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-const store = new Map<string, RateLimitEntry>();
-
+const memoryStore = new Map<string, RateLimitEntry>();
 const WINDOW_MS = 60_000; // 1 minuto
 const DEFAULT_MAX_REQUESTS = 10;
 
-/**
- * Control de tasa de peticiones (Rate Limiter) en memoria por dirección IP.
- */
-export function checkRateLimit(clientIp: string): {
-  allowed: boolean;
-  limit: number;
-  remaining: number;
-  resetAt: number;
-  retryAfter?: number;
-} {
+function checkMemoryRateLimit(ip: string) {
   const now = Date.now();
   const maxRequests = parseInt(process.env.RATE_LIMIT_MAX || "", 10) || DEFAULT_MAX_REQUESTS;
 
-  // Limpieza preventiva si el mapa crece demasiado
-  if (store.size > 2000) {
-    for (const [key, entry] of store.entries()) {
-      if (entry.resetAt < now) {
-        store.delete(key);
-      }
+  if (memoryStore.size > 2000) {
+    for (const [key, entry] of memoryStore.entries()) {
+      if (entry.resetAt < now) memoryStore.delete(key);
     }
   }
 
-  const existing = store.get(clientIp);
-
+  const existing = memoryStore.get(ip);
   if (!existing || existing.resetAt < now) {
     const resetAt = now + WINDOW_MS;
-    store.set(clientIp, { count: 1, resetAt });
+    memoryStore.set(ip, { count: 1, resetAt });
     return {
       allowed: true,
       limit: maxRequests,
@@ -63,29 +77,32 @@ export function checkRateLimit(clientIp: string): {
   };
 }
 
-/**
- * Extrae la IP pública del cliente a partir de las cabeceras HTTP de la petición.
- */
-export function getClientIp(headers: Headers): string {
-  // 1. Cabeceras confiables inyectadas por la infraestructura perimetral (tamper-proof)
-  const vercelIp = headers.get("x-vercel-forwarded-for");
-  if (vercelIp) return vercelIp.split(",")[0].trim();
-
-  const realIp = headers.get("x-real-ip");
-  if (realIp) return realIp.trim();
-
-  const cfConnectingIp = headers.get("cf-connecting-ip");
-  if (cfConnectingIp) return cfConnectingIp.trim();
-
-  // 2. Si solo existe x-forwarded-for genérico, tomar la IP agregada por el proxy perimetral más cercano
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const parts = forwardedFor.split(",").map(p => p.trim()).filter(Boolean);
-    // En arquitecturas con proxy reverso, el último o penúltimo elemento es agregado por el borde
-    if (parts.length > 0) {
-      return parts[parts.length - 1];
-    }
+export async function checkRateLimit(ip: string): Promise<{
+  allowed: boolean;
+  limit: number;
+  remaining: number;
+  resetAt: number;
+  retryAfter?: number;
+}> {
+  if (perIpLimiter && globalLimiter) {
+    const [g, r] = await Promise.all([globalLimiter.limit("all"), perIpLimiter.limit(ip)]);
+    const blocking = !g.success ? g : r;
+    return {
+      allowed: g.success && r.success,
+      limit: r.limit,
+      remaining: r.remaining,
+      resetAt: blocking.reset,
+      retryAfter: Math.max(1, Math.ceil((blocking.reset - Date.now()) / 1000)),
+    };
   }
 
-  return "127.0.0.1";
+  return checkMemoryRateLimit(ip);
+}
+
+export function getClientIp(headers: Headers): string {
+  return (
+    headers.get("x-vercel-forwarded-for")?.split(",")[0].trim() ||
+    headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
 }

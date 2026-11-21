@@ -718,7 +718,7 @@ export function ThreatReport({
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Exportar JSON
+            <span className="hidden sm:inline">Exportar JSON</span>
           </button>
           <button
             onClick={shareUrl}
@@ -727,7 +727,7 @@ export function ThreatReport({
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
             </svg>
-            {copied ? "¡Copiado!" : "Compartir"}
+            <span className="hidden sm:inline">{copied ? "¡Copiado!" : "Compartir"}</span>
           </button>
           <button
             onClick={() => window.print()}
@@ -741,7 +741,7 @@ export function ThreatReport({
       {/* ── Hero card ── */}
       <div className={`rounded-2xl border overflow-hidden ${verdictStyle.ring} bg-gradient-to-br ${verdictStyle.bg} via-[#121212] to-[#0A0A0A] shadow-2xl max-w-full box-border`}>
         <div className="p-4 sm:p-6 lg:p-7">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 md:gap-6 items-start">
             <div className="min-w-0 max-w-full">
               {/* Badges de estado */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -798,7 +798,7 @@ export function ThreatReport({
 
             {/* Gauge */}
             <div className="flex items-center md:items-start justify-center md:justify-end w-full">
-              <div className="w-full sm:w-auto max-w-[240px] bg-[#0A0A0A]/90 rounded-2xl border border-[#333333] p-4 sm:p-5 flex flex-col items-center gap-4 shadow-xl">
+              <div className="w-full sm:w-auto max-w-[240px] mx-auto md:mx-0 bg-[#0A0A0A]/90 rounded-2xl border border-[#333333] p-4 sm:p-5 flex flex-col items-center gap-4 shadow-xl">
                 <RiskGauge score={result.riskScore} grade={result.grade} verdict={result.verdict} />
                 <div className="w-full space-y-1.5 text-[11px] font-mono">
                   <div className="flex justify-between text-[#666666]">
@@ -855,8 +855,8 @@ export function ThreatReport({
         <div className="mt-5 rounded-xl bg-[#1A1A1A] border border-[#333333] p-3.5 sm:p-4 flex gap-3">
           <span className="text-white text-base shrink-0">ℹ</span>
           <p className="text-xs leading-relaxed text-[#A3A3A3]">
-            <span className="font-bold text-white">Seguridad y Privacidad Garantizada: </span>
-            SecScanner analiza amenazas en tiempo real mediante correlación multi-fuente, inteligencia en vivo y análisis estático local. Tus consultas se procesan bajo arquitectura local-first: no se almacenan ni se comparten con bases de datos externas. Para incidentes confirmados, aplica de inmediato los IoCs y medidas de contención sugeridas.
+            <span className="font-bold text-white">Aviso legal: </span>
+            Este análisis combina inteligencia de amenazas en vivo (VirusTotal, AbuseIPDB, Shodan, ThreatFox, RDAP) con heurística local y análisis estático. Los archivos se procesan en memoria y no se almacenan. Tus consultas no se persisten en bases de datos externas (arquitectura local-first, historial solo en tu navegador). Para incidentes confirmados, escala al CERT/CSIRT correspondiente y aplica las medidas de contención sugeridas.
           </p>
         </div>
       </div>

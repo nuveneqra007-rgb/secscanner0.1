@@ -14,8 +14,8 @@ export function RiskGauge({ score, grade, verdict }: { score: number; grade: str
 
   return (
     <div className="relative flex flex-col items-center">
-      <div className="relative w-[160px] h-[160px]">
-        <svg width="160" height="160" className="transform -rotate-90">
+      <div className="relative w-[clamp(120px,20vw,160px)] h-[clamp(120px,20vw,160px)]">
+        <svg viewBox="0 0 160 160" className="w-full h-full transform -rotate-90">
           <circle cx="80" cy="80" r="54" stroke="rgba(255,255,255,0.06)" strokeWidth="10" fill="none" />
           <circle
             cx="80" cy="80" r="54"
@@ -29,10 +29,10 @@ export function RiskGauge({ score, grade, verdict }: { score: number; grade: str
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[42px] font-black tracking-tighter leading-none" style={{ color }}>{score}</span>
-          <span className="text-[11px] tracking-[0.2em] text-[#666666] font-mono -mt-1">/ 100 RIESGO</span>
+          <span className="text-[clamp(28px,5vw,42px)] font-black tracking-tighter leading-none" style={{ color }}>{score}</span>
+          <span className="text-[clamp(9px,1.5vw,11px)] tracking-[0.2em] text-[#666666] font-mono -mt-1">/ 100 RIESGO</span>
           <span
-            className="mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest border"
+            className="mt-2 px-2.5 py-0.5 rounded-full text-[clamp(10px,1.8vw,12px)] font-bold tracking-widest border"
             style={{ background: bg, color, borderColor: color + "40" }}
           >
             GRADO {grade}

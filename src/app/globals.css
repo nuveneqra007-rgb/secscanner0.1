@@ -27,7 +27,7 @@
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
-  max-width: 100%;
+  max-width: 100vw;
 }
 
 body {
@@ -36,7 +36,12 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+  max-width: 100vw;
+}
+
+img, svg, video {
   max-width: 100%;
+  height: auto;
 }
 
 code, pre, .font-mono {

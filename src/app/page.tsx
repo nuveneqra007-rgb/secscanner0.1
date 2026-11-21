@@ -202,7 +202,7 @@ export default function Home() {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 md:py-14">
 
         {/* ── LANDING HERO (Estilo VirusTotal Centrado + Retro Wireframe) ── */}
         {showInput && !scanning && !selected && (
@@ -333,7 +333,7 @@ export default function Home() {
 
         {/* ── REPORTE GENERADO ── */}
         {selected && !scanning && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[2fr_1fr] gap-6 items-start w-full max-w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(300px,360px)] xl:grid-cols-[2fr_1fr] gap-4 lg:gap-6 items-start w-full max-w-full">
             {/* Panel de Escaneo Rápido en Móvil/Tablet (< 1024px, arriba) */}
             <div className="block lg:hidden rounded-2xl border border-[#333333] bg-[#121212]/80 p-3.5 sm:p-4 shadow-xl w-full">
               <div className="text-[10px] font-bold tracking-widest text-[#666666] mb-2 sm:mb-3 uppercase font-mono">Escaneo Rápido</div>
@@ -412,8 +412,8 @@ export default function Home() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-[#1A1A1A] mt-12 bg-[#0A0A0A]">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-[#666666]">
-          <span>© 2025 SecScanner — Threat Intelligence Framework</span>
-          <div className="flex items-center gap-2">
+          <span className="text-center sm:text-left">© 2025 SecScanner — Threat Intelligence Framework · Local-First</span>
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
             <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">Historial en navegador · Sin tracking</span>
             <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">MIT</span>
           </div>

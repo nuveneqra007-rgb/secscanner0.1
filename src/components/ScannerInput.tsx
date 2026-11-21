@@ -254,7 +254,9 @@ export function ScannerInput({
               <button
                 onClick={handleAnalyze}
                 disabled={loading || !isValid}
-                className="h-12 px-5 sm:px-6 rounded-xl bg-white text-black text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#E0E0E0] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition neon-hover border border-transparent shrink-0 whitespace-nowrap"
+                className={`h-12 rounded-xl bg-white text-black text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#E0E0E0] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition neon-hover border border-transparent whitespace-nowrap ${
+                  compact ? "w-full" : "px-5 sm:px-6 shrink-0"
+                }`}
               >
                 {loading ? (
                   <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -329,8 +331,8 @@ export function ScannerInput({
         {!compact && (
           <div className="mt-6 pt-4 border-t border-[#222222] text-center">
             <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
-              Los indicadores públicos se consultan en tiempo real contra servicios autorizados de ciberinteligencia (VirusTotal, abuse.ch, Shodan, RDAP).
-              <br className="hidden sm:inline" /> Los archivos se analizan en memoria en el servidor y no se almacenan. No subas archivos con datos confidenciales.
+              Los indicadores se consultan en tiempo real contra VirusTotal, AbuseIPDB, Shodan, ThreatFox y RDAP.
+              <br className="hidden sm:inline" /> Los archivos se procesan en memoria y se destruyen al instante. No subas archivos con datos confidenciales.
             </p>
           </div>
         )}

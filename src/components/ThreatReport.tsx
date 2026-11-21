@@ -643,19 +643,19 @@ export function ThreatReport({
     <div className="w-full space-y-5 animate-glitch-in">
 
       {/* ── Resumen ejecutivo ── */}
-      <div className={`rounded-2xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 ${
+      <div className={`rounded-2xl border px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 max-w-full box-border overflow-hidden ${
         result.verdict === "malicious"
           ? "border-[#FF3333]/40 bg-[#FF3333]/5"
           : result.verdict === "suspicious"
           ? "border-[#A3A3A3]/40 bg-[#A3A3A3]/5"
           : "border-[#E0E0E0]/30 bg-[#E0E0E0]/5"
       }`}>
-        {/* Score grande */}
-        <div className={`text-5xl font-black tabular-nums shrink-0 leading-none ${
+        {/* Score grande con tipografia fluida clamp */}
+        <div className={`text-[clamp(2.25rem,6vw,3.5rem)] font-black tabular-nums shrink-0 leading-none ${
           result.riskScore >= 75 ? "text-[#FF3333]" : result.riskScore >= 40 ? "text-[#A3A3A3]" : "text-[#E0E0E0]"
         }`}>
           {result.riskScore}
-          <span className="text-lg font-normal text-[#666666] ml-1">/100</span>
+          <span className="text-[clamp(0.95rem,2.2vw,1.25rem)] font-normal text-[#666666] ml-1">/100</span>
         </div>
         {/* Separador vertical */}
         <div className="hidden sm:block w-px h-12 bg-[#333333] shrink-0" />
@@ -676,13 +676,13 @@ export function ThreatReport({
             </span>
             <VerificationBadge result={result} />
           </div>
-          <p className="text-sm text-[#D4D4D4] leading-relaxed line-clamp-2">{result.summary}</p>
+          <p className="text-xs sm:text-sm text-[#D4D4D4] leading-relaxed line-clamp-2">{result.summary}</p>
         </div>
       </div>
 
       {/* ── Barra superior ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-[#666666]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-full">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-[#666666]">
           <span className="px-2.5 py-1 rounded-full bg-[#121212] border border-[#333333]">
             ID: {result.id.slice(0, 16).toUpperCase()}
           </span>
@@ -693,24 +693,24 @@ export function ThreatReport({
             {result.scanDurationMs} ms
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onNewScan && (
             <button
               onClick={onNewScan}
-              className="px-4 py-2 rounded-lg bg-white text-black text-sm font-bold hover:bg-[#E0E0E0] transition neon-hover border border-transparent"
+              className="px-3.5 sm:px-4 py-2 rounded-lg bg-white text-black text-xs sm:text-sm font-bold hover:bg-[#E0E0E0] transition neon-hover border border-transparent whitespace-nowrap"
             >
               Nuevo análisis
             </button>
           )}
           <button
             onClick={copyJSON}
-            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition"
+            className="px-3 sm:px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-xs sm:text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition whitespace-nowrap"
           >
             Copiar JSON
           </button>
           <button
             onClick={downloadJSON}
-            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5"
+            className="px-3 sm:px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-xs sm:text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5 whitespace-nowrap"
             title="Descargar reporte forense estructurado en formato JSON"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -722,7 +722,7 @@ export function ThreatReport({
           </button>
           <button
             onClick={shareUrl}
-            className="px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5"
+            className="px-3 sm:px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-xs sm:text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition flex items-center gap-1.5 whitespace-nowrap"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
@@ -731,7 +731,7 @@ export function ThreatReport({
           </button>
           <button
             onClick={() => window.print()}
-            className="hidden md:inline-flex px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition"
+            className="hidden md:inline-flex px-3 sm:px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-xs sm:text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#1A1A1A] transition whitespace-nowrap"
           >
             Imprimir
           </button>
@@ -739,10 +739,10 @@ export function ThreatReport({
       </div>
 
       {/* ── Hero card ── */}
-      <div className={`rounded-2xl border overflow-hidden ${verdictStyle.ring} bg-gradient-to-br ${verdictStyle.bg} via-[#121212] to-[#0A0A0A] shadow-2xl`}>
-        <div className="p-6 md:p-7">
-          <div className="grid md:grid-cols-[1fr_180px] gap-6">
-            <div className="min-w-0">
+      <div className={`rounded-2xl border overflow-hidden ${verdictStyle.ring} bg-gradient-to-br ${verdictStyle.bg} via-[#121212] to-[#0A0A0A] shadow-2xl max-w-full box-border`}>
+        <div className="p-4 sm:p-6 lg:p-7">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6 items-start">
+            <div className="min-w-0 max-w-full">
               {/* Badges de estado */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-widest border ${verdictStyle.badge}`}>
@@ -756,11 +756,11 @@ export function ThreatReport({
                 </span>
               </div>
 
-              {/* Indicador */}
-              <h1 className="text-lg md:text-xl font-semibold text-white break-all leading-snug font-mono">
+              {/* Indicador con tipografia fluida */}
+              <h1 className="text-[clamp(1.1rem,3vw,1.35rem)] font-semibold text-white break-all leading-snug font-mono">
                 {result.normalizedInput}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-[#A3A3A3] max-w-[640px]">
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#A3A3A3] max-w-[640px]">
                 {result.summary}
               </p>
 
@@ -797,8 +797,8 @@ export function ThreatReport({
             </div>
 
             {/* Gauge */}
-            <div className="flex items-start justify-center md:justify-end">
-              <div className="bg-[#0A0A0A]/90 rounded-2xl border border-[#333333] p-5 flex flex-col items-center gap-4 shadow-xl">
+            <div className="flex items-center md:items-start justify-center md:justify-end w-full">
+              <div className="w-full sm:w-auto max-w-[240px] bg-[#0A0A0A]/90 rounded-2xl border border-[#333333] p-4 sm:p-5 flex flex-col items-center gap-4 shadow-xl">
                 <RiskGauge score={result.riskScore} grade={result.grade} verdict={result.verdict} />
                 <div className="w-full space-y-1.5 text-[11px] font-mono">
                   <div className="flex justify-between text-[#666666]">
@@ -824,14 +824,14 @@ export function ThreatReport({
       </div>
 
       {/* ── Hallazgos ── */}
-      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 overflow-hidden shadow-xl">
-        <div className="px-5 py-4 border-b border-[#333333] flex items-center justify-between bg-[#0E0E0E]">
-          <h2 className="text-sm font-bold tracking-widest text-white uppercase">HALLAZGOS</h2>
+      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 overflow-hidden shadow-xl max-w-full box-border">
+        <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#333333] flex items-center justify-between bg-[#0E0E0E]">
+          <h2 className="text-xs sm:text-sm font-bold tracking-widest text-white uppercase">HALLAZGOS</h2>
           <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#A3A3A3]">
             {result.findings.length} total
           </span>
         </div>
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <FindingsAccordion result={result} />
         </div>
       </div>
@@ -840,11 +840,11 @@ export function ThreatReport({
       <EvidenceTabs result={result} />
 
       {/* ── Recomendaciones ── */}
-      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 p-6 shadow-xl">
+      <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 p-4 sm:p-6 shadow-xl max-w-full box-border">
         <h3 className="text-xs font-bold tracking-widest text-[#A3A3A3] mb-4 uppercase">RECOMENDACIONES</h3>
         <ul className="space-y-3">
           {result.recommendations.map((r, i) => (
-            <li key={i} className="flex gap-3 text-sm text-[#D4D4D4]">
+            <li key={i} className="flex gap-3 text-xs sm:text-sm text-[#D4D4D4]">
               <span className="mt-0.5 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {i + 1}
               </span>
@@ -852,18 +852,18 @@ export function ThreatReport({
             </li>
           ))}
         </ul>
-        <div className="mt-5 rounded-xl bg-[#1A1A1A] border border-[#333333] p-4 flex gap-3">
+        <div className="mt-5 rounded-xl bg-[#1A1A1A] border border-[#333333] p-3.5 sm:p-4 flex gap-3">
           <span className="text-white text-base shrink-0">ℹ</span>
           <p className="text-xs leading-relaxed text-[#A3A3A3]">
-            <span className="font-bold text-white">Aviso legal: </span>
-            Este análisis es heurístico y con fines educativos. No sustituye un sandbox dinámico ni la validación de un analista SOC. Para incidentes reales, escala al CERT correspondiente.
+            <span className="font-bold text-white">Seguridad y Privacidad Garantizada: </span>
+            SecScanner analiza amenazas en tiempo real mediante correlación multi-fuente, inteligencia en vivo y análisis estático local. Tus consultas se procesan bajo arquitectura local-first: no se almacenan ni se comparten con bases de datos externas. Para incidentes confirmados, aplica de inmediato los IoCs y medidas de contención sugeridas.
           </p>
         </div>
       </div>
 
       {/* Footer del reporte */}
       <div className="text-center text-[11px] font-mono text-[#555555] pb-2">
-        SecScanner Engine v0.1 · {result.scanDurationMs} ms · Heurística + YARA + Reputación
+        SecScanner Engine {result.isLive ? "v1.0 (Live)" : "v0.1"} · {result.scanDurationMs} ms · {result.isLive ? "Threat Intelligence en Vivo + Heurística" : "Heurística + YARA + Reputación"}
       </div>
 
     </div>

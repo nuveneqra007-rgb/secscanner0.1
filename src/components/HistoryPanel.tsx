@@ -104,7 +104,7 @@ export function HistoryPanel({
   const presentTypes = Array.from(new Set(history.map((h) => h.type)));
 
   return (
-    <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 backdrop-blur overflow-hidden shadow-xl">
+    <div className="rounded-2xl border border-[#333333] bg-[#121212]/80 backdrop-blur overflow-hidden shadow-xl max-w-full box-border">
       {/* ── Cabecera ── */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-[#333333]">
         <div className="flex items-center gap-2">

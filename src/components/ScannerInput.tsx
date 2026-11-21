@@ -44,9 +44,11 @@ const EXAMPLES: Record<Tab, { label: string; value: string }[]> = {
 export function ScannerInput({
   onAnalyze,
   loading,
+  compact = false,
 }: {
   onAnalyze: (input: string, fileName?: string, fileBase64?: string) => void;
   loading: boolean;
+  compact?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("archivo");
   const [value, setValue] = useState("");
@@ -84,19 +86,21 @@ export function ScannerInput({
   };
 
   return (
-    <div className="w-full max-w-[800px] mx-auto">
+    <div className="w-full max-w-[800px] mx-auto box-border">
       {/* ── Tabs estilo VirusTotal ── */}
-      <div className="flex justify-center border-b border-[#333333] mb-6 relative">
-        <div className="flex gap-4 sm:gap-10">
+      <div className={`flex justify-center border-b border-[#333333] relative overflow-x-auto scrollbar-none ${compact ? "mb-4" : "mb-6"}`}>
+        <div className={`flex ${compact ? "gap-2 sm:gap-4 w-full justify-between" : "gap-4 sm:gap-10"}`}>
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => handleTabChange(t.id)}
-              className={`pb-3 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase relative transition-colors duration-200 ${
+              className={`pb-2.5 font-mono uppercase relative transition-colors duration-200 whitespace-nowrap ${
+                compact ? "text-[11px] sm:text-xs tracking-wider" : "text-xs sm:text-sm tracking-[0.2em]"
+              } ${
                 tab === t.id ? "text-white font-bold" : "text-[#666666] hover:text-[#A3A3A3]"
               }`}
             >
-              {t.label}
+              {compact && t.id === "archivo" ? "ARCHIVO" : t.label}
               {tab === t.id && (
                 <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
               )}
@@ -107,7 +111,9 @@ export function ScannerInput({
 
       {/* ── Caja Principal ── */}
       <div
-        className={`rounded-2xl border bg-[#121212]/90 backdrop-blur p-6 md:p-8 transition-all duration-300 shadow-2xl relative overflow-hidden ${
+        className={`rounded-2xl border transition-all duration-300 relative overflow-hidden box-border max-w-full ${
+          compact ? "p-3 sm:p-4 bg-[#0E0E0E]" : "p-4 sm:p-6 md:p-8 bg-[#121212]/90 backdrop-blur shadow-2xl"
+        } ${
           dragOver ? "border-white bg-[#1A1A1A] shadow-[0_0_30px_rgba(255,255,255,0.15)]" : "border-[#333333]"
         }`}
         onDragOver={(e) => {
@@ -127,17 +133,17 @@ export function ScannerInput({
       >
         {/* TAB ARCHIVO / APK (Estilo VirusTotal con Icono Central y Láser de Escaneo) */}
         {isFileTab ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
+          <div className={`flex flex-col items-center justify-center text-center ${compact ? "py-2" : "py-6"}`}>
             {/* Icono de Archivo / Huella Digital con Línea de Escaneo Animada */}
             <div
               onClick={() => fileRef.current?.click()}
-              className="relative w-28 h-32 mb-6 cursor-pointer group flex items-center justify-center"
+              className={`relative cursor-pointer group flex items-center justify-center ${compact ? "w-20 h-24 mb-3" : "w-28 h-32 mb-6"}`}
             >
-              <div className="w-24 h-28 rounded-xl border-2 border-[#444444] group-hover:border-white transition-colors bg-[#0A0A0A] flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+              <div className={`rounded-xl border-2 border-[#444444] group-hover:border-white transition-colors bg-[#0A0A0A] flex flex-col items-center justify-center relative overflow-hidden shadow-inner ${compact ? "w-18 h-22" : "w-24 h-28"}`}>
                 {/* Fingerprint / Scan Graphic */}
                 <svg
-                  width="44"
-                  height="44"
+                  width={compact ? "32" : "44"}
+                  height={compact ? "32" : "44"}
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -218,25 +224,27 @@ export function ScannerInput({
           </div>
         ) : (
           /* TABS DE BÚSQUEDA (URL / IP / HASH) */
-          <div>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#666666] pointer-events-none">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
+          <div className="w-full">
+            <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"} items-stretch gap-2.5 w-full`}>
+              <div className="relative flex-1 w-full min-w-0">
+                <div className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-[#666666] pointer-events-none">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                </div>
+                <input
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                  placeholder={PLACEHOLDERS[tab]}
+                  className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 h-12 rounded-xl bg-[#0A0A0A] border border-[#333333] text-xs sm:text-sm font-mono text-white placeholder:text-[#444444] focus:outline-none focus:border-white focus:ring-2 focus:ring-white/10 transition box-border"
+                />
               </div>
-              <input
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                placeholder={PLACEHOLDERS[tab]}
-                className="w-full pl-12 pr-[140px] h-14 rounded-xl bg-[#0A0A0A] border border-[#333333] text-[15px] font-mono text-white placeholder:text-[#444444] focus:outline-none focus:border-white focus:ring-2 focus:ring-white/10 transition"
-              />
               <button
                 onClick={handleAnalyze}
                 disabled={loading || !isValid}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 px-6 rounded-lg bg-white text-black text-sm font-bold tracking-wider uppercase hover:bg-[#E0E0E0] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transition neon-hover border border-transparent"
+                className="h-12 px-5 sm:px-6 rounded-xl bg-white text-black text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#E0E0E0] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition neon-hover border border-transparent shrink-0 whitespace-nowrap"
               >
                 {loading ? (
                   <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -254,15 +262,17 @@ export function ScannerInput({
 
             {/* Error de validación */}
             {value.trim().length > 3 && !VALIDATORS[tab](value.trim()) && (
-              <div className="mt-2.5 flex items-center gap-2 text-xs font-mono text-[#FF3333]">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="mt-2.5 flex items-center gap-2 text-xs font-mono text-[#FF3333] break-words">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                   <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                {tab === "ip" && "Formato esperado: 192.168.1.1 o dirección IPv6"}
-                {tab === "hash" && "Formato esperado: 32 (MD5), 40 (SHA-1) o 64 (SHA-256) caracteres hex"}
-                {tab === "url" && "Introduce una URL o dominio válido"}
+                <span>
+                  {tab === "ip" && "Formato esperado: 192.168.1.1 o dirección IPv6"}
+                  {tab === "hash" && "Formato esperado: 32 (MD5), 40 (SHA-1) o 64 (SHA-256) caracteres hex"}
+                  {tab === "url" && "Introduce una URL o dominio válido"}
+                </span>
               </div>
             )}
 
@@ -284,7 +294,7 @@ export function ScannerInput({
                   <button
                     key={ex.value}
                     onClick={() => setValue(ex.value)}
-                    className="text-[11px] font-mono px-3 py-1 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#A3A3A3] hover:border-white hover:text-white transition"
+                    className="text-[10px] sm:text-[11px] font-mono px-2.5 sm:px-3 py-1 rounded-full bg-[#1A1A1A] border border-[#333333] text-[#A3A3A3] hover:border-white hover:text-white transition"
                   >
                     {ex.label}
                   </button>
@@ -305,13 +315,15 @@ export function ScannerInput({
           }}
         />
 
-        {/* Disclaimer inferior estilo VirusTotal */}
-        <div className="mt-6 pt-4 border-t border-[#222222] text-center">
-          <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
-            Al analizar datos, el motor ejecuta heurística, entropía y correlación en un entorno local seguro.
-            <br className="hidden sm:inline" /> Tus consultas no se comparten ni persisten en bases de datos externas.
-          </p>
-        </div>
+        {/* Disclaimer inferior estilo VirusTotal (oculto en modo compacto de barra lateral) */}
+        {!compact && (
+          <div className="mt-6 pt-4 border-t border-[#222222] text-center">
+            <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
+              Al analizar datos, el motor ejecuta heurística, entropía y correlación en un entorno local seguro.
+              <br className="hidden sm:inline" /> Tus consultas no se comparten ni persisten en bases de datos externas.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

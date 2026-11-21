@@ -165,7 +165,7 @@ export default function Home() {
 
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0A0A0A]/85 border-b border-[#333333]/80">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Logo y Nombre */}
           <button onClick={handleNewScan} className="flex items-center gap-3 group text-left">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-[#333333] group-hover:border-white transition-colors bg-[#121212] p-1">
@@ -202,7 +202,7 @@ export default function Home() {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-6 py-10 md:py-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
 
         {/* ── LANDING HERO (Estilo VirusTotal Centrado + Retro Wireframe) ── */}
         {showInput && !scanning && !selected && (
@@ -224,13 +224,13 @@ export default function Home() {
                 <div className="absolute -inset-1 rounded-2xl bg-white/5 blur-md -z-10" />
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-black tracking-[0.25em] text-center text-white mb-2">
+              <h1 className="text-[clamp(1.75rem,5vw,3rem)] font-black tracking-[0.2em] sm:tracking-[0.25em] text-center text-white mb-2">
                 SECSCANNER
               </h1>
             </div>
 
             {/* Subtítulo estilo VirusTotal */}
-            <p className="animate-fade-up delay-100 text-sm sm:text-[15px] font-mono text-[#A3A3A3] text-center max-w-[580px] leading-relaxed mb-10">
+            <p className="animate-fade-up delay-100 text-xs sm:text-sm md:text-[15px] font-mono text-[#A3A3A3] text-center max-w-[580px] leading-relaxed mb-10 px-2">
               Analiza archivos sospechosos, dominios, IPs y URLs para detectar malware y otras anomalías en tiempo real.
             </p>
 
@@ -333,11 +333,18 @@ export default function Home() {
 
         {/* ── REPORTE GENERADO ── */}
         {selected && !scanning && (
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
-            <div className="min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[2fr_1fr] gap-6 items-start w-full max-w-full">
+            {/* Panel de Escaneo Rápido en Móvil/Tablet (< 1024px, arriba) */}
+            <div className="block lg:hidden rounded-2xl border border-[#333333] bg-[#121212]/80 p-3.5 sm:p-4 shadow-xl w-full">
+              <div className="text-[10px] font-bold tracking-widest text-[#666666] mb-2 sm:mb-3 uppercase font-mono">Escaneo Rápido</div>
+              <ScannerInput onAnalyze={startScan} loading={false} compact={true} />
+            </div>
+
+            {/* Columna de Resultados (Izquierda en desktop) */}
+            <div className="min-w-0 w-full max-w-full">
               <button
                 onClick={handleNewScan}
-                className="mb-5 inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition print:hidden"
+                className="mb-4 sm:mb-5 inline-flex items-center gap-2 text-xs sm:text-sm font-medium px-3.5 sm:px-4 py-2 rounded-lg bg-[#121212] border border-[#333333] text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition print:hidden"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
@@ -347,11 +354,11 @@ export default function Home() {
               <ThreatReport result={selected} onNewScan={handleNewScan} />
             </div>
 
-            {/* Sidebar Sticky */}
-            <div className="lg:sticky lg:top-[76px] flex flex-col gap-4 print:hidden">
+            {/* Sidebar Sticky en Desktop (>= 1024px) & Historial abajo en móvil */}
+            <div className="lg:sticky lg:top-[76px] flex flex-col gap-4 w-full print:hidden">
               <div className="hidden lg:block rounded-2xl border border-[#333333] bg-[#121212]/80 p-4 shadow-xl">
                 <div className="text-[10px] font-bold tracking-widest text-[#666666] mb-3 uppercase font-mono">Escaneo Rápido</div>
-                <ScannerInput onAnalyze={startScan} loading={false} />
+                <ScannerInput onAnalyze={startScan} loading={false} compact={true} />
               </div>
               <HistoryPanel
                 history={history}

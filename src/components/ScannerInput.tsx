@@ -54,12 +54,13 @@ export function ScannerInput({
   const [value, setValue] = useState("");
   const [fileName, setFileName] = useState<string | undefined>();
   const [fileBase64, setFileBase64] = useState<string | undefined>();
+  const [fileLoading, setFileLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detectedType = value.trim() ? detectIndicatorType(value.trim()) : null;
   const isFileTab = tab === "archivo";
-  const isValid = isFileTab ? !!fileName : VALIDATORS[tab](value.trim());
+  const isValid = isFileTab ? (!!fileName && !!fileBase64 && !fileLoading) : VALIDATORS[tab](value.trim());
 
   const handleAnalyze = () => {
     if (!isValid) return;
@@ -69,11 +70,16 @@ export function ScannerInput({
   const handleFile = (f: File) => {
     setFileName(f.name);
     setValue(f.name);
+    setFileLoading(true);
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
       const b64 = result.split(",")[1];
       setFileBase64(b64);
+      setFileLoading(false);
+    };
+    reader.onerror = () => {
+      setFileLoading(false);
     };
     reader.readAsDataURL(f);
   };
@@ -83,6 +89,7 @@ export function ScannerInput({
     setValue("");
     setFileName(undefined);
     setFileBase64(undefined);
+    setFileLoading(false);
   };
 
   return (
@@ -185,11 +192,14 @@ export function ScannerInput({
                 </div>
                 <button
                   onClick={handleAnalyze}
-                  disabled={loading}
-                  className="mt-3 px-8 h-12 rounded-xl bg-white text-black font-bold text-sm tracking-wider uppercase hover:bg-[#E0E0E0] transition neon-hover shadow-lg flex items-center gap-2 border border-transparent"
+                  disabled={loading || fileLoading || !isValid}
+                  className="mt-3 px-8 h-12 rounded-xl bg-white text-black font-bold text-sm tracking-wider uppercase hover:bg-[#E0E0E0] disabled:opacity-40 disabled:cursor-not-allowed transition neon-hover shadow-lg flex items-center gap-2 border border-transparent"
                 >
-                  {loading ? (
-                    <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  {loading || fileLoading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      <span>{fileLoading ? "Cargando archivo..." : "Analizando..."}</span>
+                    </>
                   ) : (
                     "Confirmar y Analizar Archivo"
                   )}
